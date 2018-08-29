@@ -15,6 +15,9 @@ package com.ryorke;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -23,12 +26,16 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SpringLayout;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
+import com.ryorke.database.UserEntityManager;
 import com.ryorke.entity.User;
 
 /**
@@ -41,7 +48,7 @@ import com.ryorke.entity.User;
 public class UserManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "User Management";
 	
-	private JList<User> users;
+	private JList<User> userList;
 	private JButton addUser;
 	private JButton deleteUser;
 	private JButton modifyUser;
@@ -50,6 +57,8 @@ public class UserManagementFrame extends JFrame {
 	private JTextField firstName;
 	private JTextField lastName;
 	private JCheckBox isAdministrator;
+	
+	private UserEntityManager manager;
 	
 	/**
 	 * Creates a new window with a default title
@@ -64,6 +73,7 @@ public class UserManagementFrame extends JFrame {
 	 * @param title Window title
 	 */
 	public UserManagementFrame(String title) {
+		
 		Container contentPane = getContentPane();
 		((JPanel)contentPane).setBorder(BorderFactory.createEmptyBorder(5, 5,5, 5));
 		
@@ -75,8 +85,7 @@ public class UserManagementFrame extends JFrame {
 		setLocationRelativeTo(null);
 		setTitle(title);
 		setResizable(false);
-		setVisible(true);	
-		
+		setVisible(true);
 	}
 	
 	/**
@@ -84,33 +93,53 @@ public class UserManagementFrame extends JFrame {
 	 * @return a panel containing a list of users
 	 */
 	private JPanel createUserListPanel() {
-		BorderLayout layoutManager = new BorderLayout();
-		JPanel userlistPanel = new JPanel(layoutManager);
-		JLabel usersLabel = new JLabel("Users:");		
-		DefaultListModel<User> listModel = new DefaultListModel<User>();		
-		users = new JList<User>(listModel);	
-		JScrollPane userlistScroller = new JScrollPane();
+		ArrayList<User> databaseUserList = null; 
+		JPanel userListPanel = null; 
 		
-		userlistScroller.setViewportView(users);
-		
-		layoutManager.setHgap(5);
-		layoutManager.setVgap(5);
-		users.setFixedCellWidth(150);
-		users.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		
-		// === DEFAULT USER - REMOVE BELOW ===
-		// TODO: admin/admin to be added to database on first run before
-		//		 this ever gets checked and this sample user will be removed
-		//		 from this code and replace with a database call. 
-		User admin = new User("admin", "admin", "admin","user", true);
-		// === END OF DEFAULT USER - REMOVE ABOVE ===
-		
-		listModel.addElement(admin);
-		
-		userlistPanel.add(usersLabel, BorderLayout.NORTH);
-		userlistPanel.add(userlistScroller);
-		
-		return userlistPanel;		
+		try {
+			// Poll database for user list
+			manager = UserEntityManager.getManager();
+			databaseUserList = manager.getUsers();
+			
+			// Configure panel
+			BorderLayout layoutManager = new BorderLayout();
+			layoutManager.setHgap(5);
+			layoutManager.setVgap(5);
+			
+			JLabel usersLabel = new JLabel("Users:");
+			DefaultListModel<User> listModel = new DefaultListModel<User>();
+			for (User user : databaseUserList) {
+				listModel.addElement(user);
+			}
+			listModel.addElement(new User(5, "ryorke1", "P@ssword", "Russell", "Yorke", true));
+			userList = new JList<User>(listModel);
+			userList.setFixedCellWidth(150);
+			userList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			
+			userList.addListSelectionListener(new ListSelectionListener() {				
+				@Override
+				public void valueChanged(ListSelectionEvent e) {
+					User user = userList.getSelectedValue();					
+					username.setText(user.getUsername());
+				    firstName.setText(user.getFirstName());
+				    lastName.setText(user.getLastName());
+				    isAdministrator.setSelected(user.isAdministrator());					
+				}
+			});		
+			
+			JScrollPane userlistScroller = new JScrollPane();
+			userlistScroller.setViewportView(userList);
+			
+			userListPanel = new JPanel(layoutManager);
+			
+			userListPanel.add(usersLabel, BorderLayout.NORTH);
+			userListPanel.add(userlistScroller);			
+		} catch (IOException | SQLException exception) {
+			JOptionPane.showMessageDialog(this, "Failed to query database for user list", "Database error", 
+					JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+		}
+				
+		return userListPanel;		
 	}
 	
 	/**
@@ -120,10 +149,15 @@ public class UserManagementFrame extends JFrame {
 	 * @return A new user form
 	 */
 	private JPanel createUserForm() {
-		// TODO: Add mnuemonics and ensure tab order is correct
 		SpringLayout layoutManager = new SpringLayout();
 		JPanel userFormPanel = new JPanel(layoutManager);
 		final int GAP_SPACING = 5; 
+		
+		// TODO: 
+		// Add event handler for handling user selection after modifications to any of the fields
+		// Set the first element in the list of users to selected to pre-populate the fields
+		// Change "modify" button to "update" button and disable it until changes are made to the user fields
+		// Add the add/remove events
 		
 		
 		JLabel usernameLabel = new JLabel("Username:");

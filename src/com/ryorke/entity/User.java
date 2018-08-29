@@ -36,7 +36,20 @@ public class User {
 	 * @param isAdministator True if user is administrator, false otherwise. 
 	 */
 	public User(String username, String password, String firstName, String lastName, boolean isAdministator) {
-		userId = 0;	// TODO: Get auto-incremtn ID from database and set userId based on that value
+		this(0, username, password, firstName, lastName, isAdministator);		
+	}
+	
+	/**
+	 * Creates a new user account
+	 * 
+	 * @param username Username to set
+	 * @param password Password to set
+	 * @param firstName Users first name
+	 * @param lastName Users last name
+	 * @param isAdministator True if user is administrator, false otherwise. 
+	 */
+	public User(int userId, String username, String password, String firstName, String lastName, boolean isAdministator) {
+		setUserId(userId);
 		setUsername(username);
 		setPassword(password);
 		setFirstName(firstName);
@@ -52,6 +65,15 @@ public class User {
 		return userId;
 	}
 
+	/**
+	 * Sets the user id
+	 * 
+	 * @param userId new user id
+	 */
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
+	
 	/**
 	 * Retrieves the username
 	 * @return the username

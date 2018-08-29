@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+import com.ryorke.entity.User;
+
 public class UserEntityManager implements EntityManager {
 	private static UserEntityManager entityManager = null; 
 	private SQLiteDBManager databaseManager = null;
@@ -26,6 +28,40 @@ public class UserEntityManager implements EntityManager {
 		return entityManager;
 	}
 
+	/**
+	 * Retrieves a list of users from the database
+	 * 
+	 * @return A list of users within the database or null if no users found
+	 * @throws SQLException If an error occurs while processing the database request
+	 */
+	public ArrayList<User> getUsers() throws SQLException {
+		ArrayList<User> userList = null;
+		final String query = "SELECT * FROM user";
+		
+		try (Connection connection = databaseManager.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet results = statement.executeQuery(query)) {
+			while (results.next()) {
+				int userId = results.getInt("userId");
+				String username = results.getString("username");
+				String password = results.getString("password");
+				String firstName = results.getString("firstName");
+				String lastName = results.getString("lastName");
+				boolean isAdministrator = (results.getInt("administrator") == 1) ? true : false;
+				
+				User user = new User(userId, username, password, firstName, lastName, isAdministrator);
+				
+				if (userList == null) {
+					userList = new ArrayList<User>();
+				}
+				
+				userList.add(user);
+			}
+		}
+		
+		return userList; 
+	}
+	
 	/**
 	 * Creates a new instance of the UserEntityManager registering
 	 * itself with the SQLiteDBManager
