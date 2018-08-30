@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 import com.ryorke.entity.User;
+import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 public class UserEntityManager implements EntityManager {
 	private static UserEntityManager entityManager = null; 
@@ -33,8 +34,9 @@ public class UserEntityManager implements EntityManager {
 	 * 
 	 * @return A list of users within the database or null if no users found
 	 * @throws SQLException If an error occurs while processing the database request
+	 * @throws InvalidUserAttributeException Thrown if database information has been modified with invalid data
 	 */
-	public ArrayList<User> getUsers() throws SQLException {
+	public ArrayList<User> getUsers() throws SQLException, InvalidUserAttributeException {
 		ArrayList<User> userList = null;
 		final String query = "SELECT * FROM user";
 		
@@ -89,7 +91,7 @@ public class UserEntityManager implements EntityManager {
 				+ "firstName TEXT NOT NULL, lastName TEXT NOT NULL, "
 				+ "administrator INTEGER DEFAULT 0)";
 		final String insertDefaultUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) "
-				+ "VALUES ('admin', 'admin', 'Administrator', 'Administrator', 1)";
+				+ "VALUES ('admin', 'admin', 'Administrative', 'User', 1)";
 		
 		if (!databaseManager.tableExists("user")) {
 			try (Connection dbConnection = databaseManager.getConnection();
@@ -145,5 +147,33 @@ public class UserEntityManager implements EntityManager {
 		}
 		
 		return validCredentials; 
+	}
+	
+	/**
+	 * Inserts a new user into the database and updates the userId within the entity
+	 * 
+	 * Note: This application does not encrypt the passwords
+	 * 
+	 * @param user A new user to insert
+	 */
+	public void createUser(User user) throws SQLException {
+		String insertUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) VALUES (?, ?, ?, ?, ?)";
+		String userIdQuery = "SELECT last_insert_rowid() AS userId";
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement insertUserStatement = dbConnection.prepareStatement(insertUserQuery);
+				Statement lastRowInsertStatement = dbConnection.createStatement()) {
+			insertUserStatement.setString(1, user.getUsername());
+			insertUserStatement.setString(2,  user.getPassword());
+			insertUserStatement.setString(3,  user.getFirstName());
+			insertUserStatement.setString(4,  user.getLastName());
+			insertUserStatement.setInt(5, (user.isAdministrator()) ? 1 : 0);
+			int rowsInserted = insertUserStatement.executeUpdate();
+			assert(rowsInserted == 1): "Creation of user returns an invalid number of rows. This should always be 1.";
+			
+			ResultSet result = lastRowInsertStatement.executeQuery(userIdQuery);
+			result.next();
+			user.setUserId(result.getInt(1));				
+		}
 	}
 }

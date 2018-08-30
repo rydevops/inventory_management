@@ -13,6 +13,8 @@
  */
 package com.ryorke.entity;
 
+import com.ryorke.entity.exception.InvalidUserAttributeException;
+
 /**
  * User entity class providing details for a user
  * 
@@ -35,7 +37,7 @@ public class User {
 	 * @param lastName Users last name
 	 * @param isAdministator True if user is administrator, false otherwise. 
 	 */
-	public User(String username, String password, String firstName, String lastName, boolean isAdministator) {
+	public User(String username, String password, String firstName, String lastName, boolean isAdministator) throws InvalidUserAttributeException {
 		this(0, username, password, firstName, lastName, isAdministator);		
 	}
 	
@@ -48,7 +50,7 @@ public class User {
 	 * @param lastName Users last name
 	 * @param isAdministator True if user is administrator, false otherwise. 
 	 */
-	public User(int userId, String username, String password, String firstName, String lastName, boolean isAdministator) {
+	public User(int userId, String username, String password, String firstName, String lastName, boolean isAdministator) throws InvalidUserAttributeException {
 		setUserId(userId);
 		setUsername(username);
 		setPassword(password);
@@ -87,7 +89,10 @@ public class User {
 	 * Updates the username
 	 * @param newUsername the new username to set
 	 */
-	public void setUsername(String newUsername) {
+	public void setUsername(String newUsername) throws InvalidUserAttributeException {
+		if (newUsername == null || newUsername.length() == 0) {
+			throw new InvalidUserAttributeException("No username provided");
+		}
 		this.username = newUsername;
 	}
 	
@@ -96,15 +101,31 @@ public class User {
 	 * @return True if passwords match, false otherwise. 
 	 */
 	public boolean isValidPassword(String password) {
-		return password.equals(this.password);
+		boolean result = false;
+		if (password != null) {
+			result = this.password.equals(password); 
+		}
+		return result;
 	}
 	
 	/**
 	 * Sets the user password
 	 * @param newPassword a new password to set
 	 */
-	public void setPassword(String newPassword) {
+	public void setPassword(String newPassword) throws InvalidUserAttributeException {
+		final int MINIMUM_PASSWORD_LENGTH = 5;
+		if (newPassword == null || newPassword.length() < MINIMUM_PASSWORD_LENGTH) {
+			throw new InvalidUserAttributeException("Invalid password. Password must be greater than 6 characters.");
+		}
 		this.password = newPassword;
+	}
+	
+	/**
+	 * Retrieves the password
+	 * @return The current password
+	 */
+	public String getPassword() {
+		return password;
 	}
 	
 	/**
@@ -119,7 +140,10 @@ public class User {
 	 * Sets the users first name
 	 * @param firstName the first name to set
 	 */
-	public void setFirstName(String firstName) {
+	public void setFirstName(String firstName) throws InvalidUserAttributeException {
+		if (firstName == null || firstName.length() == 0) {
+			throw new InvalidUserAttributeException("First name must be provided");
+		}
 		this.firstName = firstName;
 	}
 	
@@ -135,7 +159,10 @@ public class User {
 	 * Sets the users last name. 
 	 * @param lastName the last name to set
 	 */
-	public void setLastName(String lastName) {
+	public void setLastName(String lastName) throws InvalidUserAttributeException {
+		if (lastName == null || lastName.length() == 0) {
+			throw new InvalidUserAttributeException("Last name must be provided");
+		}
 		this.lastName = lastName;
 	}
 	

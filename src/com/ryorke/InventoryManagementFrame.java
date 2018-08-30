@@ -22,6 +22,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
 import com.ryorke.entity.PackageDimension;
+import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -360,7 +363,22 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new UserManagementFrame();
+				try {
+					UserManagementFrame userManagement = new UserManagementFrame();
+					userManagement.setVisible(true);
+				}   catch (SQLException | IOException exception) {
+					String errorMessage = String.format("Unable to retrieve users.\nReason:\n%s", exception.getMessage());
+					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
+				} catch (InvalidUserAttributeException invalidUserAttributeException) {
+					// This catch should only occur if database modifications are performed outside of this
+					// application. 
+					String errorMessage = String.format("Unable to process users due to database schema error. Contact system administrator for further assistance.\n"
+							+ "Response:\n%s", invalidUserAttributeException.getMessage());
+					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
+					invalidUserAttributeException.printStackTrace();
+				}
 			}
 		});
 		edit.add(editManageDB);
