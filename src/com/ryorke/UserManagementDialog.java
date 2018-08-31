@@ -17,6 +17,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -24,6 +25,9 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -51,9 +55,6 @@ import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 // TODO: 
 // 1. Make table sortable
-// 2. Edit user functionality (assume table model and view model are sortable)
-// 3. Delete user functionality with prompt\
-// 	  Ensure at least 1 administrator is left in the system don't allow all users to be deleted. 
 // 4. Add catch while in editing mode (either Add user or edit) that prevents accidental
 //	  closing of the window by prompting if they are sure. 
 /**
@@ -63,7 +64,7 @@ import com.ryorke.entity.exception.InvalidUserAttributeException;
  * @author Russell Yorke
  */
 @SuppressWarnings("serial")
-public class UserManagementFrame extends JDialog {
+public class UserManagementDialog extends JDialog {
 	public final static String WINDOW_TITLE = "User Management";	
 	
 	private JTable userTable;
@@ -80,6 +81,11 @@ public class UserManagementFrame extends JDialog {
 	
 	private UserTableModel userTableModel;
 	
+	// Flag to monitor the status of the password fields
+	// when editing a user. If true, a password check will
+	// be performed otherwise the password will be unchanged
+	// enabling modifications without changing the password. 
+	private boolean passwordModified = false; 
 	
 	/**
 	 * Creates a new window with a default title
@@ -88,8 +94,8 @@ public class UserManagementFrame extends JDialog {
 	 * @throws IOException If database file cannot be accessed
 	 * @throws InvalidUserAttributeException If database manager was unable to process users
 	 */
-	public UserManagementFrame() throws SQLException, IOException, InvalidUserAttributeException {
-		this(UserManagementFrame.WINDOW_TITLE);
+	public UserManagementDialog(Frame owner) throws SQLException, IOException, InvalidUserAttributeException {
+		this(owner, UserManagementDialog.WINDOW_TITLE);
 	}
 	
 	/**
@@ -101,7 +107,9 @@ public class UserManagementFrame extends JDialog {
 	 * @throws SQLException If a database error occurs during processing
 	 * @throws IOException If database file cannot be accessed
 	 */
-	public UserManagementFrame(String title) throws SQLException, IOException, InvalidUserAttributeException {
+	public UserManagementDialog(Frame owner, String title) throws SQLException, IOException, InvalidUserAttributeException {
+		super(owner, title, true);
+		
 		// Initializing the table model early to avoid creating the 
 		// dialog if an error occurs
 		userTableModel = new UserTableModel();
@@ -149,6 +157,30 @@ public class UserManagementFrame extends JDialog {
 		addComponent(form, formLayout, constraint, passwordLabel );
 		setConstraint(constraint, 1, 0, 1, 1);
 		addComponent(form, formLayout, constraint, password);
+		password.addKeyListener(new KeyListener() {
+			/**
+			 * Updates the password modified flag to be true after any key-press event
+			 * @param e Event details
+			 */
+			@Override
+			public void keyPressed(KeyEvent e) {
+				passwordModified = true;
+			}
+			
+			/**
+			 * Unused/not implemented
+			 * @param e
+			 */
+			@Override
+			public void keyTyped(KeyEvent e) {}
+			
+			/**
+			 * Unused/not implemented
+			 * @param e Event details
+			 */
+			@Override
+			public void keyReleased(KeyEvent e) {}			
+		});
 		
 		confirmPassword = new JPasswordField();
 		JLabel confirmPasswordLabel = createLabel("Confirm Password:", SwingConstants.RIGHT, KeyEvent.VK_C, confirmPassword);
@@ -156,7 +188,31 @@ public class UserManagementFrame extends JDialog {
 		addComponent(form, formLayout, constraint, confirmPasswordLabel);
 		setConstraint(constraint, 1, 0, GridBagConstraints.REMAINDER, 1);
 		addComponent(form, formLayout, constraint, confirmPassword);
-				
+		confirmPassword.addKeyListener(new KeyListener() {
+			/**
+			 * Updates the password modified flag to be true after any key-press event
+			 * @param e Event details
+			 */
+			@Override
+			public void keyPressed(KeyEvent e) {
+				passwordModified = true;
+			}
+			
+			/**
+			 * Unused/not implemented
+			 * @param e
+			 */
+			@Override
+			public void keyTyped(KeyEvent e) {}
+			
+			/**
+			 * Unused/not implemented
+			 * @param e Event details
+			 */
+			@Override
+			public void keyReleased(KeyEvent e) {}			
+		});
+		
 		firstName = new JTextField();
 		JLabel firstNameLabel = createLabel("First Name:", SwingConstants.RIGHT, KeyEvent.VK_F, firstName);
 		setConstraint(constraint, 0, 0, 1, 1);
@@ -208,6 +264,50 @@ public class UserManagementFrame extends JDialog {
 		userTable = new JTable(userTableModel);
 		JScrollPane userTableScrollView = new JScrollPane(userTable);
 		contentPane.add(userTableScrollView, BorderLayout.CENTER);
+		
+		userTable.addMouseListener(new MouseListener() {
+			
+			/**
+			 * Captures double click events on the table moving into
+			 * edit user mode. 
+			 * 
+			 * @param e Details about the mouse click event. 
+			 */
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (!(addUser.getText().equals("Save user")) && e.getClickCount() == 2 && !e.isConsumed()) {					
+					editUser();
+				}				
+			}
+			
+			/**
+			 * Not implemented
+			 * @param e Details about the mouse click event. 
+			 */
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+			
+			/**
+			 * Not implemented
+			 * @param e Details about the mouse click event. 
+			 */
+			@Override
+			public void mousePressed(MouseEvent e) {}
+			
+			/**
+			 * Not implemented
+			 * @param e Details about the mouse click event. 
+			 */
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			
+			/**
+			 * Not implemented
+			 * @param e Details about the mouse click event. 
+			 */
+			@Override
+			public void mouseEntered(MouseEvent e) {}		
+		});
 	}
 	
 	/**
@@ -227,7 +327,10 @@ public class UserManagementFrame extends JDialog {
 		closeWindow = createButton("Close", KeyEvent.VK_O);
 		
 		addUser.addActionListener(new ActionListener() {
-			
+			/**
+			 * Switches to add user mode
+			 * @param e Event details
+			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String text = ((JButton) e.getSource()).getText();
@@ -240,6 +343,28 @@ public class UserManagementFrame extends JDialog {
 			}
 		});
 		
+		editUser.addActionListener(new ActionListener() {
+			/**
+			 * Switches to edit user mode for selected user
+			 * @param e Event details
+			 */
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				editUser();
+			}
+		});
+		
+		deleteUser.addActionListener(new ActionListener() {
+			/**
+			 * Deletes selected user
+			 * @param e Event details
+			 */
+			@Override
+			public void actionPerformed(ActionEvent e) {				
+				deleteUser();
+			}
+		});
+		
 		closeWindow.addActionListener(new ActionListener() {
 			/**
 			 * Closes this window when button pressed
@@ -248,7 +373,7 @@ public class UserManagementFrame extends JDialog {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {				
-				UserManagementFrame.this.dispatchEvent(new WindowEvent(UserManagementFrame.this, WindowEvent.WINDOW_CLOSING));
+				UserManagementDialog.this.dispatchEvent(new WindowEvent(UserManagementDialog.this, WindowEvent.WINDOW_CLOSING));
 			}
 		});
 		
@@ -328,19 +453,26 @@ public class UserManagementFrame extends JDialog {
 		isAdministrator.setSelected(false);		
 	}
 	
+	/**
+	 * Transitions the view to allow new user details to be provided.  
+	 */
 	private void addUser() {
 		enableFormEntry(true);
-		clearFormEntry();
-
-		addUser.setText("Save user");
-		addUser.setMnemonic(KeyEvent.VK_S);
+		clearFormEntry();		
 		
+		toggleAddUserLabel();
 		editUser.setEnabled(false);
 		deleteUser.setEnabled(false);
 		
 		username.requestFocus();
+		
+		passwordModified = true; // Force a password to be provided
 	}
 	
+	/**
+	 * Saves the user information to the database when adding a new user or editing
+	 * an existing user. 
+	 */
 	private void saveUser() {
 		String username = this.username.getText();
 		String password = new String(this.password.getPassword());
@@ -352,7 +484,7 @@ public class UserManagementFrame extends JDialog {
 		int errorDisplayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 		String errorTitle = "Invalid user details";
 		
-		if (!password.equals(confirmPassword)) {
+		if (passwordModified && !password.equals(confirmPassword)) {
 			JOptionPane.showMessageDialog(this, "Password and confirm password do not match", errorTitle, errorDisplayOptions);
 			this.password.setText("");
 			this.confirmPassword.setText("");
@@ -361,8 +493,26 @@ public class UserManagementFrame extends JDialog {
 		}
 		
 		try {
-			User newUser = new User(username, password, firstName, lastName, isAdministrator);
-			userTableModel.addUser(newUser);
+			// Determine if this is a new user add or an existing user edit
+			// based on the state of the userTable. If disabled, this only
+			// occurs when a user is being edited to prevent the selection from
+			// being changed
+			User user = null;
+			if (userTable.isEnabled()) {
+				user = new User(username, password, firstName, lastName, isAdministrator);
+				userTableModel.addUser(user);
+			} else {
+				int selectedRow = userTable.getSelectedRow();				
+				User modifiedUser = userTableModel.getUser(selectedRow).clone();
+				modifiedUser.setUsername(this.username.getText());
+				modifiedUser.setFirstName(this.firstName.getText());
+				modifiedUser.setLastName(this.lastName.getText());
+				modifiedUser.setAdministrator(this.isAdministrator.isSelected());
+				if (passwordModified) {
+					modifiedUser.setPassword(new String(this.password.getPassword()));
+				}
+				userTableModel.updateUser(modifiedUser);
+			}			
 		} catch (InvalidUserAttributeException exception) {
 			JOptionPane.showMessageDialog(this, exception.getMessage(), errorTitle, errorDisplayOptions);
 			this.username.requestFocus();
@@ -374,15 +524,87 @@ public class UserManagementFrame extends JDialog {
 			return;
 		}
 		
+		toggleAddUserLabel();
 		enableFormEntry(false);
 		clearFormEntry();
 		
 		editUser.setEnabled(true);
 		deleteUser.setEnabled(true);
+		userTable.setEnabled(true);
+	}
+	
+	/**
+	 * Transitions the form into edit user mode allowing the selected user to be modified. 
+	 * The password is optional and only checked/changed if the password field is changed otherwise
+	 * the fill data in these fields are ignored. 
+	 */
+	private void editUser() {
+		int selectedRow = userTable.getSelectedRow(); 
+		if (selectedRow > -1) {
+			User selectedUser = userTableModel.getUser(selectedRow);		
+			
+			username.setText(selectedUser.getUsername());
+			password.setText("***********");
+			confirmPassword.setText("***********");
+			firstName.setText(selectedUser.getFirstName());
+			lastName.setText(selectedUser.getLastName());
+			isAdministrator.setSelected(selectedUser.isAdministrator());		
+			
+			enableFormEntry(true);
+			editUser.setEnabled(false);
+			deleteUser.setEnabled(false);
+			userTable.setEnabled(false);		
+			toggleAddUserLabel();
+			
+			passwordModified = false;		
+			username.requestFocus();
+		} else {
+			String errorMessage = "A user must be selected before performing an edit operation.";
+			int options = JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE;
+			JOptionPane.showMessageDialog(this, errorMessage, "No user selected", options);
+		}
+	}
+	
+	/**
+	 * Toggles the label that appears on the add user button
+	 */
+	private void toggleAddUserLabel() {
+		final String[] values = { "Add user", "Save user" };
+		if (addUser.getText().equals(values[0])) {
+			addUser.setText(values[1]);			
+			addUser.setMnemonic(KeyEvent.VK_S);
+		} else {
+			addUser.setText(values[0]);
+			addUser.setMnemonic(KeyEvent.VK_D);
+		}		
+	}
+	
+	/**
+	 * Deletes the selected user after confirming this operation
+	 */
+	private void deleteUser() {
+		int selectedRow = userTable.getSelectedRow();
+		String message = "";		
 		
-		addUser.setText("Add user");
-		addUser.setMnemonic(KeyEvent.VK_D);
-		
+		if (selectedRow > -1) {
+			message = "Are you sure you want to delete the selected user?";			
+			
+			int response = JOptionPane.showConfirmDialog(this, message, "Delete user?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (response == JOptionPane.YES_OPTION) {
+				try {
+					userTableModel.deleteUser(selectedRow);
+				} catch (SQLException | InvalidUserAttributeException exception) {
+					int errorDisplayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+					String errorTitle = "User deletion failed";					
+					String sqlErrorMessage = String.format("Unable to delete user. If problem persist contact System Administrator.\nReason:\n%s", 
+							exception.getMessage());
+					JOptionPane.showMessageDialog(this, sqlErrorMessage, errorTitle, errorDisplayOptions);
+				}				
+			}
+		} else {
+			message = "You must selected a user to delete.";			
+			JOptionPane.showMessageDialog(this, message, "No user selected", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 	
 	/**
@@ -409,6 +631,84 @@ public class UserManagementFrame extends JDialog {
 			manager.createUser(user);
 			users.add(user);
 			fireTableRowsInserted(users.size() - 1, users.size() - 1);			
+		}
+		
+		/**
+		 * Retrieves an existing user
+		 * @param rowIndex A model row index used to retrieve the selected users
+		 * @return An existing user or null if rowIndex is invalid
+		 */
+		public User getUser(int rowIndex) {
+			User user = null;
+			if (rowIndex >= 0 && rowIndex < users.size()) {
+				user = users.get(rowIndex);
+			}
+			return user;
+		}
+		
+		/**
+		 * Pushes the existing user information into the database and updates the 
+		 * table model to reflect the changes.  
+		 * 
+		 * @param rowIndex The row to update (if invalid, nothing occurs)
+		 * @throws SQLException If an error occurs while attempting to update the record 
+		 * @throws InvalidUserAttributeException if user being delete is the last administrator
+		 */
+		public void updateUser(User modifiedUser) throws SQLException, InvalidUserAttributeException {
+			User selectedUser = null;
+			int selectedIndex = -1;
+			for (User user : users) {
+				if (user.getUserId() == modifiedUser.getUserId()) {
+					selectedUser = user; 
+					break;
+				}
+			}
+			selectedIndex = users.indexOf(selectedUser);
+			
+			if (modifiedUser.isAdministrator() == true || administratorCount(selectedUser) > 0) {
+				manager.updateUser(modifiedUser);
+				users.remove(selectedIndex);
+				users.add(selectedIndex, modifiedUser);
+				fireTableRowsUpdated(selectedIndex, selectedIndex);
+			} else {
+				throw new InvalidUserAttributeException("At least one administrator must exist in the system.");
+			}
+		}
+		
+		/**
+		 * Deletes the selected row from the database and model
+		 * 
+		 * @throws SQLException If a database error occurs
+		 * @throws InvalidUserAttributeException if user being delete is the last administrator
+		 */
+		public void deleteUser(int rowIndex) throws SQLException, InvalidUserAttributeException {
+			if (rowIndex >= 0 && rowIndex < users.size()) {				
+				User user = users.get(rowIndex);
+				
+				if (administratorCount(user) > 0) {
+					manager.deleteUser(user);
+					users.remove(rowIndex);
+					fireTableRowsDeleted(rowIndex, rowIndex);
+				} else {
+					throw new InvalidUserAttributeException("At least one administrator must exist in the system.");
+				}
+			}
+		}
+		
+		/**
+		 * Counts the total number of administrators excluding the provided user
+		 * 
+		 * @param user The user to not count
+		 * @return The total number of admins not including user
+		 */
+		private int administratorCount(User user) {
+			int count = 0; 
+			for (User existingUser : users) {
+				if (existingUser != user && existingUser.isAdministrator()) {
+					count++;
+				}
+			}
+			return count;
 		}
 		
 		/**
@@ -486,7 +786,7 @@ public class UserManagementFrame extends JDialog {
 			}
 			
 			return result;
-		}		
+		}
 	}
 	
 	

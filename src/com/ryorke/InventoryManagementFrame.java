@@ -44,6 +44,7 @@ import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
 import com.ryorke.entity.PackageDimension;
+import com.ryorke.entity.User;
 import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 import javax.swing.BorderFactory;
@@ -62,7 +63,7 @@ import javax.swing.JLabel;
 @SuppressWarnings("serial")
 public class InventoryManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "Inventory Manager";
-	
+	private User authenticatedUser = null;
 	private boolean promptOnClose = true; 
 	
 	/**
@@ -85,17 +86,21 @@ public class InventoryManagementFrame extends JFrame {
 	/**
 	 * Creates a new inventory management window with a default
 	 * title
+	 * @param authenticatedUser A reference to the user that logged into the system
 	 */
-	public InventoryManagementFrame() {
-		this(InventoryManagementFrame.WINDOW_TITLE);
+	public InventoryManagementFrame(User authenticatedUser) {
+		this(InventoryManagementFrame.WINDOW_TITLE, authenticatedUser);
 	}
 	
 	/**
 	 * Creates a new inventory management window with the specified
 	 * title
 	 * @param title Window title
+	 * @param authenticatedUser A reference to the user that logged into the system
 	 */
-	public InventoryManagementFrame(String title) {
+	public InventoryManagementFrame(String title, User authenticatedUser) {
+		this.authenticatedUser = authenticatedUser;
+		
 		Container contentPane = getContentPane();
 		contentPane.setLayout(new BorderLayout());
 		
@@ -113,7 +118,7 @@ public class InventoryManagementFrame extends JFrame {
 	    
 		setSize(new Dimension(800, 600));
 		setLocationRelativeTo(null);
-		setTitle(title);
+		setTitle(String.format("%s (Logged in as %s)", title, authenticatedUser.getUsername()));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setVisible(true);		
 		
@@ -341,6 +346,7 @@ public class InventoryManagementFrame extends JFrame {
 		edit.setMnemonic(KeyEvent.VK_E);
 		editManageDB.setMnemonic(KeyEvent.VK_D);
 		editManageDB.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+		editManageDB.setEnabled(authenticatedUser.isAdministrator());
 		editManageDB.addActionListener(new ActionListener() {
 			/** 
 			 * Display database management window
@@ -355,6 +361,7 @@ public class InventoryManagementFrame extends JFrame {
 		});
 		editManageUsers.setMnemonic(KeyEvent.VK_U);
 		editManageUsers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0));
+		editManageUsers.setEnabled(authenticatedUser.isAdministrator());
 		editManageUsers.addActionListener(new ActionListener() {
 			/** 
 			 * Display user management window
@@ -364,7 +371,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
-					UserManagementFrame userManagement = new UserManagementFrame();
+					UserManagementDialog userManagement = new UserManagementDialog(InventoryManagementFrame.this);
 					userManagement.setVisible(true);
 				}   catch (SQLException | IOException exception) {
 					String errorMessage = String.format("Unable to retrieve users.\nReason:\n%s", exception.getMessage());
@@ -402,7 +409,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(InventoryManagementFrame.this, 
-						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.3", 
+						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.4", 
 						"About", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
@@ -450,18 +457,7 @@ public class InventoryManagementFrame extends JFrame {
 		JPanel buttonPanel = new JPanel(layoutManager);
 		
 		addInventoryItem = new JButton("Add Item");
-		editInventoryItem = new JButton("Edit Item");
-		deleteInventoryItem = new JButton("Delete Item");
-		
 		addInventoryItem.setMnemonic(KeyEvent.VK_A);
-		editInventoryItem.setMnemonic(KeyEvent.VK_D);
-		deleteInventoryItem.setMnemonic(KeyEvent.VK_L);
-		
-		buttonPanel.add(addInventoryItem);
-		buttonPanel.add(editInventoryItem);
-		buttonPanel.add(deleteInventoryItem);
-		
-		
 		addInventoryItem.addActionListener(new ActionListener() {
 			
 			/**
@@ -478,6 +474,10 @@ public class InventoryManagementFrame extends JFrame {
 				}				
 			}
 		});
+		buttonPanel.add(addInventoryItem);
+		
+		editInventoryItem = new JButton("Edit Item");
+		editInventoryItem.setMnemonic(KeyEvent.VK_D);
 		editInventoryItem.addActionListener(new ActionListener() {
 			
 			/**
@@ -491,18 +491,24 @@ public class InventoryManagementFrame extends JFrame {
 				new InventoryEditorFrame(inventory.get(selectedRow));				
 			}
 		});
+		buttonPanel.add(editInventoryItem);
 		
-		deleteInventoryItem.addActionListener(new ActionListener() {
-			/**
-			 * Deletes the selected item
-			 * 
-			 * @param e action event details
-			 */
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Delete Item action not yet implemented", "Deleting Item", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-			}
-		});
+		if (authenticatedUser.isAdministrator()) {
+			deleteInventoryItem = new JButton("Delete Item");		
+			deleteInventoryItem.setMnemonic(KeyEvent.VK_L);
+			deleteInventoryItem.addActionListener(new ActionListener() {
+				/**
+				 * Deletes the selected item
+				 * 
+				 * @param e action event details
+				 */
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Delete Item action not yet implemented", "Deleting Item", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+				}
+			});
+			buttonPanel.add(deleteInventoryItem);
+		}
 		
 		return buttonPanel;
 	}

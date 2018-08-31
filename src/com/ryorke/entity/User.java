@@ -190,4 +190,18 @@ public class User {
 	public String toString() {
 		return this.username;
 	}
+	
+	/**
+	 * Creates an identical copy of this User
+	 * @return A copy of the User
+	 */
+	public User clone() {
+		User copy = null;
+		try { 
+			copy = new User(userId, username, password, firstName, lastName, administrator);
+		} catch (InvalidUserAttributeException exception) {
+			// Do nothing, should be impossible to reach this
+		}
+		return  copy;
+	}
 }

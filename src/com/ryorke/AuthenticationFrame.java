@@ -14,6 +14,8 @@
 package com.ryorke;
 
 import com.ryorke.database.UserEntityManager;
+import com.ryorke.entity.User;
+import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -215,8 +217,9 @@ public class AuthenticationFrame extends JFrame {
 			String password = new String(AuthenticationFrame.this.password.getPassword());
 			
 			try {
-				if (userEntityManager.authenticateUser(username, password)) {
-					new InventoryManagementFrame();
+				User authenticatedUser = userEntityManager.authenticateUser(username, password);
+				if (authenticatedUser != null) {
+					new InventoryManagementFrame(authenticatedUser);
 					dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 				} else {
 					invalidLoginCount++;
@@ -243,6 +246,10 @@ public class AuthenticationFrame extends JFrame {
 				}
 			
 				JOptionPane.showMessageDialog(this, errorMessage, "Unable to access database", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+			} catch (InvalidUserAttributeException invalidUserException) {
+				String errorMessage = String.format("An unknown database error occured while attempting to authenticate user. "
+						+ "Contact your System Administrator if problem persists.\nReason:%s", invalidUserException.getMessage());
+				JOptionPane.showMessageDialog(this, errorMessage, "Invalid user type", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}

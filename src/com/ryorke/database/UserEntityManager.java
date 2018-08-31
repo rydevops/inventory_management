@@ -125,13 +125,14 @@ public class UserEntityManager implements EntityManager {
 	 * 
 	 * @param username A username to validate
 	 * @param password A password belonging to the username
-	 * @return True if credentials are validate, false otherwise
+	 * @return A user object if authentication passed, null otherwise
 	 * 
 	 * @throws SQLException if a database error occurs while processing the request.
+	 * @throws InvalidUserAttributeException If attributes returned from the database are incorrectly formatted for an authenticated User
 	 */
-	public boolean authenticateUser(String username, String password) throws SQLException {
-		boolean validCredentials = false;
-		String userQuery = "SELECT password FROM user WHERE username = ?";
+	public User authenticateUser(String username, String password) throws SQLException, InvalidUserAttributeException {
+		User authenticatedUser = null;
+		String userQuery = "SELECT * FROM user WHERE username = ?";
 		
 		try (Connection dbConnection = databaseManager.getConnection();
 				PreparedStatement sqlStatement = dbConnection.prepareStatement(userQuery)){
@@ -139,14 +140,19 @@ public class UserEntityManager implements EntityManager {
 			ResultSet results = sqlStatement.executeQuery();
 			
 			if (results.next()) {
-				if (results.getString(1).equals(password)) {
-					validCredentials = true;
+				if (results.getString("password").equals(password)) {
+					int userId = results.getInt("password");					
+					String firstName = results.getString("firstName");
+					String lastName = results.getString("lastName");
+					boolean isAdministrator = (results.getInt("administrator") == 1) ? true : false;
+					
+					authenticatedUser = new User(userId, username, password, firstName, lastName, isAdministrator);					
 				}
 			}
 			results.close();			
 		}
 		
-		return validCredentials; 
+		return authenticatedUser; 
 	}
 	
 	/**
@@ -155,6 +161,7 @@ public class UserEntityManager implements EntityManager {
 	 * Note: This application does not encrypt the passwords
 	 * 
 	 * @param user A new user to insert
+	 * @throws SQLException If an SQL/Database error occurs
 	 */
 	public void createUser(User user) throws SQLException {
 		String insertUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) VALUES (?, ?, ?, ?, ?)";
@@ -174,6 +181,48 @@ public class UserEntityManager implements EntityManager {
 			ResultSet result = lastRowInsertStatement.executeQuery(userIdQuery);
 			result.next();
 			user.setUserId(result.getInt(1));				
+		}
+	}
+	
+	/**
+	 * Updates an existing user based on the userId
+	 * 
+	 * @param user An existing user to update
+	 * @throws SQLException If an SQL/Database error occurs
+	 */
+	public void updateUser(User user) throws SQLException {
+		String updateUserQuery = "UPDATE user SET username = ?, password = ?, firstName = ?, lastName = ?, administrator = ? WHERE userId = ?";
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement updateUserStatement = dbConnection.prepareStatement(updateUserQuery)) {
+			updateUserStatement.setString(1, user.getUsername());
+			updateUserStatement.setString(2, user.getPassword());
+			updateUserStatement.setString(3, user.getFirstName());
+			updateUserStatement.setString(4, user.getLastName());
+			updateUserStatement.setInt(5, (user.isAdministrator()) ? 1 : 0);
+			updateUserStatement.setInt(6, user.getUserId());
+			
+			int rowsUpdated = updateUserStatement.executeUpdate();
+			
+			assert(rowsUpdated == 1): String.format("Only one user should ever be updated. %d users were updated instead.", rowsUpdated);			
+		}
+	}
+	
+	/**
+	 * Deletes a user based on userID
+	 * @param user An existing user to delete
+	 * @throws SQLException If an SQL/Database error occurs
+	 */
+	public void deleteUser(User user) throws SQLException {
+		String deleteUserQuery = "DELETE FROM user WHERE userId = ?";
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement deleteUserStatement = dbConnection.prepareStatement(deleteUserQuery)) {
+			deleteUserStatement.setInt(1, user.getUserId());
+			
+			int rowsDeleted = deleteUserStatement.executeUpdate();
+			
+			assert(rowsDeleted == 1): String.format("More than one row (%d) was deleted.", rowsDeleted);			
 		}
 	}
 }
