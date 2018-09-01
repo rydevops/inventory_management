@@ -30,7 +30,7 @@ public class Accessory extends Item {
 	 * 
 	 * @param itemNumber An item number
 	 * @param productName A name for the item
-	 * @param productDescription The descriptio not the item
+	 * @param productDescription The description not the item
 	 * @param unitsInStock The number of units in stock
 	 * @param unitCost The cost of individual units
 	 * @param manufacture The manufacture that produces the item
@@ -54,7 +54,7 @@ public class Accessory extends Item {
 	 * Creates a new unitialized Accessory object
 	 */
 	public Accessory() {
-		this(-1, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", -1);		
+		this(0, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", 0);		
 	}
 	
 	/**

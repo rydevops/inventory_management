@@ -60,7 +60,7 @@ public class Console extends Item {
 	 * Creates a new unitialized console object
 	 */
 	public Console() {
-		this(-1, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", "", null, 1);		
+		this(0, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", "", null, 1);		
 	}
 	
 	/**

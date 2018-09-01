@@ -238,11 +238,11 @@ public class InventoryManagementFrame extends JFrame {
 		
 		Item item = null;
 		if (response == availableTypes[0]) {
-			item = new Game();
+			item = new Accessory();			
 		} else if (response == availableTypes[1]) {
-			item = new Accessory();
-		} else if (response == availableTypes[2]) {
 			item = new Console();
+		} else if (response == availableTypes[2]) {			
+			item = new Game();
 		}
 		return item;
 	}

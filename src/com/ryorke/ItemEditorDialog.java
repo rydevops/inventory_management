@@ -94,15 +94,17 @@ public class ItemEditorDialog extends JDialog {
 		
 		JPanel buttonPanel = new JPanel(new GridLayout(1,3));		
 		
+		saveItem = new JButton("Save");
+		saveItem.setMnemonic(KeyEvent.VK_V);
+		buttonPanel.add(saveItem);
+		
 		if (activeUser.isAdministrator()) {
 			deleteItem = new JButton("Delete");
 			deleteItem.setMnemonic(KeyEvent.VK_I);		
 			buttonPanel.add(deleteItem);
 		}		
 		
-		saveItem = new JButton("Save");
-		saveItem.setMnemonic(KeyEvent.VK_V);
-		buttonPanel.add(saveItem);
+		
 		
 		cancel = new JButton("Cancel");
 		cancel.setMnemonic(KeyEvent.VK_A);

@@ -98,7 +98,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		controls.setLayout(layout);
 		TitledBorder border = BorderFactory.createTitledBorder(
 				BorderFactory.createLineBorder(Color.BLACK, 1),
-				"Accessory Information");
+				"Console Information");
 		controls.setBorder(border);
 			
 		// Initialize constriants
@@ -153,8 +153,9 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		// *** SAMPLE DATA ***
 		// TODO: Remove and replace with database data
 		// TODO: Add method for adding game IDs to this list
-		DefaultListModel<String> lm = (DefaultListModel<String>) includedGameId.getModel();
-		lm.addElement("God of War");
+		// TODO: Cleanup/Remove this commented block
+//		DefaultListModel<String> lm = (DefaultListModel<String>) includedGameId.getModel();
+//		lm.addElement("God of War");
 		// *** END OF SAMPLE DATA
 		constraint.gridwidth = 1;
 		constraint.weightx = 0;
