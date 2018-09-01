@@ -104,7 +104,7 @@ public class ItemPanel extends JPanel implements ItemEditor {
 				"Item Information");
 		controls.setBorder(border);
 			
-		// Initialize constriants
+		// Initialize constraints
 		constraint.weightx = 0;
 		constraint.weighty = 0;
 		constraint.gridwidth = 1;
@@ -271,7 +271,11 @@ public class ItemPanel extends JPanel implements ItemEditor {
 		DecimalFormat currencyFormat = new DecimalFormat("#,###0.00");
 		
 		if (this.item != null) {
-			itemNumber.setText(Integer.toString(item.getItemNumber()));
+			// Don't display the item number if this is a new item not yet saved
+			// to the database
+			if (item.getItemNumber() >= 0)
+				itemNumber.setText(Integer.toString(item.getItemNumber()));
+			
 			productName.setText(item.getProductName());
 			description.setText(item.getProductDescription());
 			unitsInStock.setText(Integer.toString(item.getUnitsInStock()));

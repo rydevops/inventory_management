@@ -16,6 +16,7 @@ package com.ryorke;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,6 +24,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -30,6 +32,7 @@ import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
+import com.ryorke.entity.User;
 
 /**
  * Inventory management frame will create a new view frame
@@ -39,34 +42,28 @@ import com.ryorke.entity.Item;
  * @author Russell Yorke
  */
 @SuppressWarnings("serial")
-public class InventoryEditorFrame extends JFrame {
+public class ItemEditorDialog extends JDialog {
 	private final static String WINDOW_TITLE = "Item Editor";
 	
 	// Window controls
 	private JPanel genericItemPanel;
 	private JPanel itemSpecificPanel;
 	private JButton deleteItem;
-	private JButton updateItem;
+	private JButton saveItem;
 	private JButton cancel;
 	
-	// Item information
-	private Item item; 
-	
-	/**
-	 * Creates a new item editor without an item
-	 * to be used when creating a new item
-	 */
-	public InventoryEditorFrame() {
-		this(null);
-	}
-	
+	private Item item;	
+	private User activeUser;
+		
 	/**
 	 * Create a new item editor based on the given item
 	 * 
 	 * @param item An item to edit. Pass null to create a new item
 	 */
-	public InventoryEditorFrame(Item item) {
+	public ItemEditorDialog(Frame owner, Item item, User activeUser) {
+		super(owner, WINDOW_TITLE, true);	// Modal dialog always
 		this.item = item;
+		this.activeUser = activeUser;
 		initializeView();
 	}
 	
@@ -96,10 +93,17 @@ public class InventoryEditorFrame extends JFrame {
 		contentPane.add(editorPanel, BorderLayout.CENTER);
 		
 		JPanel buttonPanel = new JPanel(new GridLayout(1,3));		
-		deleteItem = new JButton("Delete item");
-		deleteItem.setMnemonic(KeyEvent.VK_I);
-		updateItem = new JButton("Update item");
-		deleteItem.setMnemonic(KeyEvent.VK_T);
+		
+		if (activeUser.isAdministrator()) {
+			deleteItem = new JButton("Delete");
+			deleteItem.setMnemonic(KeyEvent.VK_I);		
+			buttonPanel.add(deleteItem);
+		}		
+		
+		saveItem = new JButton("Save");
+		saveItem.setMnemonic(KeyEvent.VK_V);
+		buttonPanel.add(saveItem);
+		
 		cancel = new JButton("Cancel");
 		cancel.setMnemonic(KeyEvent.VK_A);
 		cancel.addActionListener(new ActionListener() {
@@ -108,19 +112,15 @@ public class InventoryEditorFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				dispatchEvent(new WindowEvent(InventoryEditorFrame.this, WindowEvent.WINDOW_CLOSING));				
+				dispatchEvent(new WindowEvent(ItemEditorDialog.this, WindowEvent.WINDOW_CLOSING));				
 			}
 		});
-		buttonPanel.add(updateItem);
-		buttonPanel.add(deleteItem);
 		buttonPanel.add(cancel);
-		contentPane.add(buttonPanel, BorderLayout.SOUTH);
 		
+		contentPane.add(buttonPanel, BorderLayout.SOUTH);		
 		setMinimumSize(new Dimension(875, 360));
-		setTitle(InventoryEditorFrame.WINDOW_TITLE + ((item == null) ? " - New Item" : " - " + item.getProductName()));
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setVisible(true);
 	}
 	
 }

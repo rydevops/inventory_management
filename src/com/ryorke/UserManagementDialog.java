@@ -46,6 +46,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 
@@ -262,7 +263,8 @@ public class UserManagementDialog extends JDialog {
 	 */
 	private void createUserTable(Container contentPane) {
 		userTable = new JTable(userTableModel);
-		JScrollPane userTableScrollView = new JScrollPane(userTable);
+		userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		JScrollPane userTableScrollView = new JScrollPane(userTable);		
 		contentPane.add(userTableScrollView, BorderLayout.CENTER);
 		
 		userTable.addMouseListener(new MouseListener() {

@@ -28,6 +28,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.Hashtable;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -38,6 +39,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
 
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
@@ -65,6 +67,7 @@ public class InventoryManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "Inventory Manager";
 	private User authenticatedUser = null;
 	private boolean promptOnClose = true; 
+	private InventoryTableModel inventoryTableModel = null; 
 	
 	/**
 	 * Controls
@@ -208,15 +211,28 @@ public class InventoryManagementFrame extends JFrame {
 	}
 	
 	/**
-	 * Prompts user for item type and creates new item based
-	 * on selection
 	 * 
-	 * @return A new item unless user cancelled.
 	 */
-	private Item createNewItem() {		
-		String[] availableTypes = { "Video Game", "Accessory", "Console" };
+	private void createNewItem() {
+		Item newItem = getItemType();
+		
+		if (newItem != null) {
+			ItemEditorDialog editor = new ItemEditorDialog(this, newItem, authenticatedUser);
+			editor.setVisible(true);
+		}
+	}
+	
+	
+	
+	/**
+	 * Creates an empty item object based on user selected
+	 * 
+	 * @return A empty item or null if cancelled
+	 */
+	private Item getItemType() {		
+		String[] availableTypes = { "Accessory", "Console", "Video Game" };
 		String message = "What type of item?";
-		String title = "Item Selection";		
+		String title = "Create new item";		
 		
 		String response = (String) JOptionPane.showInputDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE, null, availableTypes, availableTypes[0]);
 		
@@ -228,7 +244,6 @@ public class InventoryManagementFrame extends JFrame {
 		} else if (response == availableTypes[2]) {
 			item = new Console();
 		}
-		
 		return item;
 	}
 	
@@ -238,62 +253,12 @@ public class InventoryManagementFrame extends JFrame {
 	 * @return Configured inventory table
 	 */
 	private JScrollPane createInventoryTable() {
-		// TODO: Remove sample data
-		// ============= SAMPLE DATA TO BE REMOVED ====================
-		inventory.add(new Game(1, "God of War", "A brand new game with remastered content",
-				250, 79.99, "Santa Monica Studios", new GregorianCalendar(2018, 12, 31).getTime(), new PackageDimension(4, 5, 6, 1), 
-				4, 1, 1, "M - Mature 17+"));
-		inventory.add(new Accessory(2, "Wireless Beats", "Simply wireless headphones", 200, 49.95, "Apple", new GregorianCalendar(2019, 07, 15).getTime(), 
-				new PackageDimension(3, 4, 6, 5.7F),  "White", "MF-A1234", 1));
-		inventory.add(new Console(3, "Playstation 4", "Next generation console", 100, 499.99, "Sony", new GregorianCalendar(2013, 12, 15).getTime(), 
-				new PackageDimension(6, 17, 15, 25),  "Black", "1TB", "SPCH-1000", null, 2));
-
-		String [] header = {"Item Number",
-				"Product Name",
-				"Product Description", 
-				"Item Type",
-				"Units in Stock", 
-				"Unit Cost", 
-				"Manufacture",
-				"Release Date"};
+		inventoryTableModel = new InventoryTableModel();		
 		
-		Object[][] tableData = new Object[inventory.size()][header.length];
+		inventoryTable = new JTable(inventoryTableModel);
+		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);		
 		
-		for (int inventoryItem = 0; inventoryItem < inventory.size(); inventoryItem++) {
-			Item item = inventory.get(inventoryItem);
-			String itemType = "";
-			if (item instanceof Game) {
-				itemType = "Video Game";
-			} else if (item instanceof Accessory) {
-				itemType = "Accessory";
-			} else if (item instanceof Console) {
-				itemType = "Console";
-			}
-			
-			SimpleDateFormat dateFormatter = (SimpleDateFormat) SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT);
-			dateFormatter.applyPattern("YYYY/MM/dd");		
-			DecimalFormat currencyFormat = new DecimalFormat("#,###0.00");
-			
-			int headerCounter = 0;
-			tableData[inventoryItem][headerCounter++] = item.getItemNumber();
-			tableData[inventoryItem][headerCounter++] = item.getProductName();			
-			tableData[inventoryItem][headerCounter++] = item.getProductDescription();			
-			tableData[inventoryItem][headerCounter++] = itemType;
-			tableData[inventoryItem][headerCounter++] = item.getUnitsInStock();
-			tableData[inventoryItem][headerCounter++] = currencyFormat.format(item.getUnitCost());
-			tableData[inventoryItem][headerCounter++] = item.getManufacture();
-			tableData[inventoryItem][headerCounter++] = dateFormatter.format(item.getReleaseDate());
-	
-		}
-		// ============= END OF SAMPLE DATA ===========================
-	
-		JScrollPane tableScroller = new JScrollPane();		
-		inventoryTable = new JTable(tableData, header);
-		tableScroller.setViewportView(inventoryTable);
-		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		inventoryTable.setRowSelectionInterval(0, 0);
-		inventoryTable.setCellSelectionEnabled(false);
-		inventoryTable.setRowSelectionAllowed(true);
+		JScrollPane tableScroller = new JScrollPane(inventoryTable);
 		
 		return tableScroller;
 	}
@@ -468,10 +433,7 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Item item = createNewItem();
-				if (item != null) {
-					new InventoryEditorFrame(item);
-				}				
+				createNewItem();				
 			}
 		});
 		buttonPanel.add(addInventoryItem);
@@ -488,7 +450,8 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int selectedRow = inventoryTable.getSelectedRow();								
-				new InventoryEditorFrame(inventory.get(selectedRow));				
+				ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventory.get(selectedRow), authenticatedUser);
+				editor.setVisible(true);				
 			}
 		});
 		buttonPanel.add(editInventoryItem);
@@ -531,5 +494,85 @@ public class InventoryManagementFrame extends JFrame {
 		
 		promptOnClose = false;
 		dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+	}
+	
+	class InventoryTableModel extends AbstractTableModel {
+		private final static int ITEM_ID = 0;
+		private final static int ITEM_NAME = 1;
+		private final static int ITEM_DESCRIPTION = 2;
+		private final static int ITEM_TYPE = 3;
+		private final static int ITEM_UNITS_IN_STOCK = 4;
+		private final static int ITEM_UNIT_COST = 5;
+		private final static int ITEM_MANUFACTURE = 6;
+		private final static int ITEM_RELEASSE_DATE = 7;
+		
+		String[] header = { "Item Number", "Name", "Description", "Type", "Units in Stock", "Unit Cost", "Manufacture", "Release Date" };
+		ArrayList<Item> inventoriedItems = new ArrayList<Item>();
+		 		
+		@Override
+		public int getColumnCount() {
+			return header.length;
+		}
+
+		@Override
+		public int getRowCount() {
+			return inventoriedItems.size();
+		}
+
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			Item item = null; 
+			Object value = null; 
+			
+			if (inventoriedItems.size() > rowIndex) {
+				item = inventoriedItems.get(rowIndex);
+				
+				switch (columnIndex) {
+				case ITEM_ID:
+					value = item.getItemNumber();
+					break;
+				case ITEM_NAME:
+					value = item.getProductName();
+					break;
+				case ITEM_DESCRIPTION:
+					value = item.getProductDescription();
+					break;
+				case ITEM_TYPE:					
+					if (item instanceof Accessory)
+						value = "Accessory";
+					else if (item instanceof Console)
+						value = "Console";
+					else if (item instanceof Game)
+						value = "Game";
+					else
+						// Shouldn't be possible to reach this unless a new type has been created and not
+						// accounted for within this model
+						assert(item instanceof Accessory || item instanceof Console || item instanceof Game): "Unknown or unexpected item type found in ItemTableModel";
+					
+					break;
+				case ITEM_UNITS_IN_STOCK:
+					value = item.getUnitsInStock();
+					break;
+				case ITEM_UNIT_COST:
+					value = item.getUnitCost();
+					break;
+				case ITEM_MANUFACTURE:
+					value = item.getManufacture();
+					break;
+				case ITEM_RELEASSE_DATE:
+					// TODO: Validate output format to ensure it's converted as expected based on locale
+					value = item.getReleaseDate();
+					break;
+				}
+			}
+			
+			return value;
+		}
+		
+		@Override
+		public String getColumnName(int column) {			
+			return header[column];
+		}
+		
 	}
 }
