@@ -2,9 +2,13 @@ package com.ryorke.database;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
 import java.util.ArrayList;
+
+import com.ryorke.entity.Console;
 
 public class ConsoleEntityManager implements EntityManager {
 	private static ConsoleEntityManager entityManager = null;
@@ -30,7 +34,7 @@ public class ConsoleEntityManager implements EntityManager {
 	}
 	
 	/**
-	 * Creates a new instance of the UserEntityManager registering
+	 * Creates a new instance of the ConsoleEntityManager registering
 	 * itself with the SQLiteDBManager
 	 * 
 	 * @throws IOException if unable to access database file
@@ -51,7 +55,8 @@ public class ConsoleEntityManager implements EntityManager {
 	public void createTable() throws SQLException {
 		final String createTableQuery = "CREATE TABLE IF NOT EXISTS console "
 				+ "(consoleId INTEGER UNIQUE, "	// consoleId = itemId or foreign key
-				+ "controlesIncluded INTEGER, "
+				+ "color TEXT NOT NULL, "
+				+ "controllersIncluded INTEGER, "
 				+ "diskSpace TEXT NOT NULL, "
 				+ "includedGameIds TEXT DEFAULT '', "  // comma-separated int with foreign key of games
 				+ "modelNumber TEXT NOT NULL)";
@@ -63,7 +68,76 @@ public class ConsoleEntityManager implements EntityManager {
 			}
 		}
 	}
+	
+	/**
+	 * Retrieves a list of consoles from the database
+	 * 
+	 * @return A list of consoles
+	 * @throws SQLException If a database error occurs
+	 * @throws ParseException If a release date was incorrectly stored within the database. 
+	 */
+	public ArrayList<Console> getConsoles() throws SQLException, ParseException {
+		final String getAllConsolesQuery = "SELECT * FROM console";
+		ArrayList<Console> consoles = null;
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				Statement statement = dbConnection.createStatement();
+				ResultSet consoleResults = statement.executeQuery(getAllConsolesQuery)) {
+			while (consoleResults.next()) {
+				int consoleId = consoleResults.getInt("consoleId");
+				String color = consoleResults.getString("color");
+				int controllersIncluded = consoleResults.getInt("controllersIncluded");
+				String diskSpace = consoleResults.getString("diskSpace");				
+				String modelNumber = consoleResults.getString("modelNumber");
+				
+				String gameIdsCSV = consoleResults.getString("includedGameIds");
+				int[] gameIds = null;
+				if (gameIdsCSV != null) {
+					String[] splitGameIds = gameIdsCSV.split(",");
+					gameIds = new int[splitGameIds.length];
+					for (int index = 0; index < splitGameIds.length; index++) {
+						gameIds[index] = Integer.parseInt(splitGameIds[index]);
+					}				
+				}
+				
+				Console console = new Console();
+				console.setItemNumber(consoleId);
+				console.setColor(color);
+				console.setControllersIncluded(controllersIncluded);
+				console.setDiskSpace(diskSpace);
+				console.setModelNumber(modelNumber);
+				itemEntityManager.loadItem(console);
+				
+				if (consoles == null)
+					consoles = new ArrayList<Console>();
+				
+				consoles.add(console);
+			}
+		}
+		
+		return null; 
+	}
 
+	public void addConsole(Console console) {
+		final String insertConsoleQuery = "INSERT INTO console (consoleId, color, controllersIncluded, "
+				+ "diskSpace, includedGameIds, modelNumber) VALUES (?, ?, ?, ?, ?, ?)";
+		
+		int newConsoleId = itemEntityManager.addItem(console);
+	}
+	
+	public void updateConsole(Console console) {
+		final String updateConsoleQuery = "UPDATE console SET color = ?, controllersIncluded = ?, "
+				+ "diskSpace = ?, includedGameIds = ?, modelNumber = ? WHERE consoleId = ?";
+		
+		itemEntityManager.updateItem(console);
+	}
+	
+	public void deleteConsole(Console console) {
+		final String deleteConsoleQuery = "DELETE FROM console WHERE consoleId = ?";
+		
+		itemEntityManager.deleteItem(console);
+	}
+	
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub
