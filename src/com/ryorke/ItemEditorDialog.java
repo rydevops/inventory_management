@@ -22,12 +22,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.sql.SQLException;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import com.ryorke.database.AccessoryEntityManager;
+import com.ryorke.database.ConsoleEntityManager;
+import com.ryorke.database.GameEntityManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
@@ -54,7 +60,20 @@ public class ItemEditorDialog extends JDialog {
 	
 	private Item item;	
 	private User activeUser;
-		
+	private boolean saved = false;	// Flag to indicate that user saved the item
+	
+	// TODO: Load manufacture list (in ItemPanel)
+	
+	/**
+	 * Provides confirmation if the user saved the item being edited or 
+	 * cancelled. 
+	 * 
+	 * @return true if item saved to the database, false otherwise. 
+	 */
+	public boolean wasSaved() {
+		return saved;
+	}
+	
 	/**
 	 * Create a new item editor based on the given item
 	 * 
@@ -62,8 +81,9 @@ public class ItemEditorDialog extends JDialog {
 	 */
 	public ItemEditorDialog(Frame owner, Item item, User activeUser) {
 		super(owner, WINDOW_TITLE, true);	// Modal dialog always
-		this.item = item;
+		this.item = item;	// TODO: Perform clone operation so we can modify this in place
 		this.activeUser = activeUser;
+		saved = false;
 		initializeView();
 	}
 	
@@ -96,7 +116,20 @@ public class ItemEditorDialog extends JDialog {
 		
 		saveItem = new JButton("Save");
 		saveItem.setMnemonic(KeyEvent.VK_V);
+		saveItem.addActionListener(new ActionListener() {
+			/**
+			 * Executes the save operation when save button 
+			 * clicked. 
+			 * 
+			 * @param e Source of event
+			 */
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				performSave();				
+			}
+		});
 		buttonPanel.add(saveItem);
+		
 		
 		if (activeUser.isAdministrator()) {
 			deleteItem = new JButton("Delete");
@@ -123,6 +156,54 @@ public class ItemEditorDialog extends JDialog {
 		setMinimumSize(new Dimension(875, 360));
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	}
+	
+	/**
+	 * Attempts to save the item and if no errors occur the dialog is closed. 
+	 * If an error occurs, the user will be notified. 
+	 */
+	public void performSave() {
+		String error = "Unable to save %s.\nReason:\n%s";
+		String title = "Problem saving";
+		int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+		saved = false;	// Always reset just in case dialog is shown multiple times in future
+		
+		if (item instanceof Accessory) {			
+			try {
+				AccessoryEntityManager entityManager = AccessoryEntityManager.getManager();
+				entityManager.addAccessory((Accessory)item);
+				saved = true;
+			} catch (SQLException | IOException exception) {
+				JOptionPane.showMessageDialog(this, String.format(error, "accessory", exception.getMessage()), 
+						title, windowOptions);
+			}
+		} else if (item instanceof Console) {
+			try {
+				ConsoleEntityManager entityManager = ConsoleEntityManager.getManager();
+				entityManager.addConsole((Console)item);
+				saved = true;
+			} catch (SQLException | IOException exception) {
+				JOptionPane.showMessageDialog(this, String.format(error, "console", exception.getMessage()), 
+						title, windowOptions);
+			}
+		} else if (item instanceof Game) {
+			try {
+				GameEntityManager entityManager = GameEntityManager.getManager();
+				entityManager.addGame((Game)item);
+				saved = true;
+			} catch (SQLException | IOException exception) {
+				JOptionPane.showMessageDialog(this, String.format(error, "game", exception.getMessage()), 
+						title, windowOptions);
+			}
+		} else {
+			// Should not be possible to reach this code unless a new item type has been
+			// created and not handled here. 
+			assert(false): "performSave unable to complete due to unknown item type.";			
+		}
+		
+		if (wasSaved()) {
+			this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+		}
 	}
 	
 }

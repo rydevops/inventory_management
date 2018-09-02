@@ -18,14 +18,22 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -33,7 +41,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
 
+import com.ryorke.database.ManufactureEntityManager;
 import com.ryorke.entity.Item;
+import com.ryorke.entity.Manufacture;
 
 /**
  * Item Inventory Panel - Provides a generic item editor 
@@ -41,7 +51,9 @@ import com.ryorke.entity.Item;
  * @author Russell Yorke
  */
 @SuppressWarnings("serial")
-public class ItemPanel extends JPanel implements ItemEditor {
+public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
+	public final static Color INVALID_INPUT = new Color(255, 200, 200); 
+	
 	private JTextField itemNumber;	
 	private JTextField productName;
 	private JTextArea description;
@@ -122,6 +134,7 @@ public class ItemPanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, new JLabel()); // FILLER
 		
 		productName = new JTextField();
+		productName.addFocusListener(this);
 		JLabel productNameLabel = createJLabel("Name:", SwingConstants.RIGHT, KeyEvent.VK_N, productName);
 		constraint.weightx = 0;
 		constraint.gridwidth = 1;
@@ -132,6 +145,7 @@ public class ItemPanel extends JPanel implements ItemEditor {
 		
 		JScrollPane descriptionPane = new JScrollPane();
 		description = new JTextArea();
+		description.addFocusListener(this);
 		JLabel descriptionLabel = createJLabel("Description:", SwingConstants.RIGHT, KeyEvent.VK_D, descriptionPane);
 		descriptionPane.setViewportView(description);
 		description.setLineWrap(true);
@@ -145,8 +159,10 @@ public class ItemPanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, descriptionPane);
 		
 		unitsInStock = new JTextField();
+		unitsInStock.addFocusListener(this);
 		JLabel unitsInStockLabel = createJLabel("Units in stock:", SwingConstants.RIGHT, KeyEvent.VK_S, unitsInStock);
 		unitCost = new JTextField();
+		unitCost.addFocusListener(this);
 		JLabel unitCostLabel = createJLabel("Unit cost:", SwingConstants.RIGHT, KeyEvent.VK_C, unitCost);
 		constraint.weightx = 0;
 		constraint.weighty = 0;
@@ -161,18 +177,27 @@ public class ItemPanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, unitCost);
 		
 		manufacture = new JComboBox<String>();
+		// FocusListener has to be on the inner JTextField otherwise the event won't 
+		// fire when changed. 
+		manufacture.getEditor().getEditorComponent().addFocusListener(this);
 		JLabel manufactureLabel = createJLabel("Manufacture:", SwingConstants.RIGHT, KeyEvent.VK_M, manufacture);
 		releaseDate = new JTextField();
+		releaseDate.addFocusListener(this);
 		JLabel releaseDateLabel = createJLabel("Release date:", SwingConstants.RIGHT, KeyEvent.VK_R, releaseDate);
-		// --- SAMPLE DATA HERE ---
-		// TODO: Load list from database of manufactures
-		// TODO: Allow list to be added to by simply typing in a new Manufacture
-		String[] manufactureList = {"Sony", "Microsoft", "Nintendo"};
-		for (String vendor : manufactureList) {
-			manufacture.addItem(vendor);
+		try {
+			ManufactureEntityManager manager = ManufactureEntityManager.getManager();
+			ArrayList<Manufacture> manufactures = manager.getManufactures();
+			if (manufactures != null) {
+				for (Manufacture manufactureElement : manufactures) {
+					manufacture.addItem(manufactureElement.getName());			
+				}
+			}
+		} catch (SQLException | IOException exception) {
+			JOptionPane.showMessageDialog(this, String.format("Unable to load manufactures."
+					+ "\nReason:\n%s", exception.getMessage()), "Manufacture load error", 
+					JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
-		// --- END OF SAMPLE ------
-		manufacture.setEditable(true);
+		manufacture.setEditable(true);	// Allow users to enter new manufactures to be added automatically
 		manufacture.setSelectedIndex(-1);
 		constraint.weightx = 0;
 		constraint.weighty = 0;
@@ -188,9 +213,13 @@ public class ItemPanel extends JPanel implements ItemEditor {
 
 		
 		height = new JTextField();
+		height.addFocusListener(this);
 		width = new JTextField();
+		width.addFocusListener(this);
 		depth = new JTextField();
+		depth.addFocusListener(this);
 		weight = new JTextField();
+		weight.addFocusListener(this);
 		JLabel packageDimensionsLabel = new JLabel("Package Dimensions:");
 		JLabel heightLabel = createJLabel("Height", SwingConstants.LEFT, KeyEvent.VK_H, height);
 		JLabel widthLabel = createJLabel("Width", SwingConstants.LEFT, KeyEvent.VK_W, width);
@@ -288,5 +317,333 @@ public class ItemPanel extends JPanel implements ItemEditor {
 			weight.setText(dimensionFormat.format(item.getPackageDimensions().getWeight()));
 		}
 	}
+
+
+	/**
+	 * Not implemented/used
+	 */
+	@Override
+	public void focusGained(FocusEvent e) {}
+
+
+	/**
+	 * Configures the component to display a tooltip and change the background color
+	 * 
+	 * @param component A component to modify
+	 * @param tooltip The tooltip to set (set to null to disable tooltips)
+	 * @param bgColor A color to change the background to
+	 */
+	private void setFieldStyle(JComponent component, String tooltip, Color bgColor) {
+		component.setBackground(bgColor);
+		component.setToolTipText(tooltip);
+	}
+	
+	/**
+	 * Performs field validation and field-to-item updates
+	 */
+	@Override
+	public void focusLost(FocusEvent e) {
+		Object source = e.getSource();
+		
+		if (source == productName) {
+			checkProductName();
+		} else if (source == description) {
+			checkProductDescription();
+		} else if (source == manufacture.getEditor().getEditorComponent()) {
+			checkManufacture();
+		} else if (source == unitsInStock) {
+			checkUnitsInStock();
+		} else if (source == unitCost) {
+			checkUnitCost();
+		} else if (source == releaseDate) {
+			checkReleaseDate();
+		} else if (source == height) {
+			checkHeight();
+		} else if (source == width) {
+			checkWidth();
+		} else if (source == depth) {
+			checkDepth();
+		} else if (source == weight) {
+			checkWeight();
+		} 
+	}
+	
+	/**
+	 * Perform validation and item updates on all fields within this view. 
+	 * 
+	 * @return true if all fields are validate and updated, false otherwise
+	 */
+	public boolean validateAllFields() {
+		return checkProductName() && checkProductDescription() &&
+				checkManufacture() && checkUnitsInStock() && checkUnitCost() &&
+				checkReleaseDate() && checkHeight() && checkWeight() && checkDepth() &&
+				checkWeight();
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkProductName() {
+		String value = productName.getText();
+		boolean isValid = false;
+		
+		if (value.length() > 0) {
+			item.setProductName(value);
+			setFieldStyle(productName, null, Color.WHITE);
+			isValid = true;
+		} else {
+			setFieldStyle(productName, "Product name must be provided.", INVALID_INPUT);
+		}			
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkProductDescription() {		
+		String value = description.getText().trim();
+		boolean isValid = false;
+		
+		if (value.length() > 0) {
+			item.setProductDescription(value);
+			setFieldStyle(description, null, Color.WHITE);
+			isValid = true;
+		} else {				
+			setFieldStyle(description, "Product description must be provided.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkManufacture() {
+		boolean isValid = false;
+		
+		// Extract information from the inner JTextField. This is required to 
+		// allow the use of an editable field that may not exist as a selectable
+		// item
+		JTextField manufactureField = (JTextField) manufacture.getEditor().getEditorComponent();
+		String value = (String) manufactureField.getText();
+		
+		if (value.length() > 0) {
+			item.setManufacture(value);
+			setFieldStyle(manufactureField, null, Color.WHITE);
+			isValid = true;
+		} else {				
+			setFieldStyle(manufactureField, "A manufacture must be provided.", INVALID_INPUT);				
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkUnitsInStock() {
+		boolean isValid = false;
+		
+		try {
+			int value = Integer.parseInt(unitsInStock.getText().replaceAll(",", ""));
+			if (value >= 0) {
+				item.setUnitsInStock(value);
+				setFieldStyle(unitsInStock, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(unitsInStock, "Invalid units in stock. Value must be 0 or more.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkUnitCost() {
+		boolean isValid = false;
+		
+		try {
+			double value = Double.parseDouble(unitCost.getText().replaceAll("\\$|,", ""));
+			if (value >= 0.00) {
+				item.setUnitCost(value);
+				setFieldStyle(unitCost, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(unitCost, "Invalid unit cost. Value must be 0.00 or more.", INVALID_INPUT);
+		}
+		
+		return isValid; 
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkReleaseDate() {
+		boolean isValid = false;
+		
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+		formatter.setLenient(false); // Disable lenient date parsing of invalid dates
+		
+		try {
+			Date value = formatter.parse(releaseDate.getText().replaceAll("\\\\", "/"));
+			item.setReleaseDate(value);
+			setFieldStyle(releaseDate, null, Color.WHITE);
+			isValid = true;
+		} catch (ParseException pe) {
+			setFieldStyle(releaseDate, "Invalid date provided. Date must be in format of 'yyyy/MM/dd' and set to a valid date."
+					+ " (e.g. 2018/08/26).", INVALID_INPUT);	
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkWidth() {
+		boolean isValid = false;
+		
+		try {
+			float value = Float.parseFloat(width.getText().replaceAll(",", ""));
+			if (value >= 0.00) {
+				item.getPackageDimensions().setWidth(value);
+				setFieldStyle(width, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(width, "Invalid width. Value must be 0.00 or more.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkHeight() {
+		boolean isValid = false;
+		
+		try {
+			float value = Float.parseFloat(height.getText().replaceAll(",", ""));
+			if (value >= 0.00) {
+				item.getPackageDimensions().setHeight(value);
+				setFieldStyle(height, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(height, "Invalid height. Value must be 0.00 or more.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkWeight() {
+		boolean isValid = false;
+		
+		try {
+			float value = Float.parseFloat(weight.getText().replaceAll(",", ""));
+			if (value >= 0.00) {
+				item.getPackageDimensions().setWeight(value);
+				setFieldStyle(weight, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(weight, "Invalid weight. Value must be 0.00 or more.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validated the component has a valid value. If valid, the corresponding
+	 * item is updated with the value and the field is cleared of the invalid state
+	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * 
+	 * @return true if field contains valid date, false otherwise. 
+	 */
+	public boolean checkDepth() {
+		boolean isValid = false;
+		
+		try {
+			float value = Float.parseFloat(depth.getText().replaceAll(",", ""));
+			if (value >= 0.00) {
+				item.getPackageDimensions().setDepth(value);
+				setFieldStyle(depth, null, Color.WHITE);
+				isValid = true;
+			}
+		} catch (NumberFormatException nfe) {
+			// Do nothing here
+		}
+		
+		if (!isValid) {
+			setFieldStyle(depth, "Invalid depth. Value must be 0.00 or more.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
 }
 

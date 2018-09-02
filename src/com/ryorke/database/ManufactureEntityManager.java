@@ -69,7 +69,7 @@ public class ManufactureEntityManager implements EntityManager {
 	@Override
 	public void createTable() throws SQLException {
 		final String createManufactureTable = "CREATE TABLE IF NOT EXISTS manufacture"
-				+ "(manufactureId INTEGER PRIMARY KEY" 
+				+ "(manufactureId INTEGER PRIMARY KEY, " 
 				+ "name TEXT UNIQUE NOT NULL COLLATE NOCASE)";		
 				
 		if (!databaseManager.tableExists("manufacture")) {

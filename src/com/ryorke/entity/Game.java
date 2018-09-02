@@ -15,7 +15,6 @@ package com.ryorke.entity;
 
 import java.util.Date;
 
-import javax.management.InvalidAttributeValueException;
 
 /**
  * Video game item details

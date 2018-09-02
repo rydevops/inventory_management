@@ -81,12 +81,12 @@ public class ItemEntityManager implements EntityManager {
 				+ "description TEXT NOT NULL, "
 				+ "manufactureId INTEGER NOT NULL, " //FOREIGN KEY
 				+ "releaseDate TEXT NOT NULL, " // Converted to text string
-				+ "unitCost REAL DEFAULT = 0.00 NOT NULL, "
-				+ "unitsInStock INTEGER DEFAULT = 0 NOT NULL, "
-				+ "width REAL DEFAULT = 0.000 NOT NULL, "
-				+ "height REAL DEFAULT = 0.000 NOT NULL, "
-				+ "depth REAL DEFAULT = 0.000 NOT NULL, "
-				+ "weight REAL DEFAULT = 0.000 NOT NULL)";
+				+ "unitCost REAL DEFAULT 0.00 NOT NULL, "
+				+ "unitsInStock INTEGER DEFAULT 0 NOT NULL, "
+				+ "width REAL DEFAULT 0.000 NOT NULL, "
+				+ "height REAL DEFAULT 0.000 NOT NULL, "
+				+ "depth REAL DEFAULT 0.000 NOT NULL, "
+				+ "weight REAL DEFAULT 0.000 NOT NULL)";
 		
 		if (!databaseManager.tableExists("item")) {
 			try (Connection dbConnection = databaseManager.getConnection();

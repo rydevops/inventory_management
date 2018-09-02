@@ -24,11 +24,8 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
-import java.util.Hashtable;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -41,11 +38,14 @@ import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 
+import com.ryorke.database.AccessoryEntityManager;
+import com.ryorke.database.ConsoleEntityManager;
+import com.ryorke.database.GameEntityManager;
+import com.ryorke.database.SQLiteDBManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
-import com.ryorke.entity.PackageDimension;
 import com.ryorke.entity.User;
 import com.ryorke.entity.exception.InvalidUserAttributeException;
 
@@ -211,10 +211,11 @@ public class InventoryManagementFrame extends JFrame {
 	}
 	
 	/**
-	 * 
+	 * Displays new item dialog. If user saves the item the inventory table
+	 * will be updated with the new item. 
 	 */
-	private void createNewItem() {
-		Item newItem = getItemType();
+	private void showNewItemDialog() {
+		Item newItem = selectItemType();
 		
 		if (newItem != null) {
 			ItemEditorDialog editor = new ItemEditorDialog(this, newItem, authenticatedUser);
@@ -225,11 +226,11 @@ public class InventoryManagementFrame extends JFrame {
 	
 	
 	/**
-	 * Creates an empty item object based on user selected
+	 * Promotes user for an item type to be created and generates a new default item of that type. 
 	 * 
 	 * @return A empty item or null if cancelled
 	 */
-	private Item getItemType() {		
+	private Item selectItemType() {		
 		String[] availableTypes = { "Accessory", "Console", "Video Game" };
 		String message = "What type of item?";
 		String title = "Create new item";		
@@ -248,13 +249,27 @@ public class InventoryManagementFrame extends JFrame {
 	}
 	
 	/**
-	 * Creates a scrollable inventory table
+	 * Creates a scrollable inventory table. If an error occurs while attempting
+	 * to load the inventory into the table, the application will display an error 
+	 * and exit. 
 	 * 
 	 * @return Configured inventory table
 	 */
 	private JScrollPane createInventoryTable() {
-		inventoryTableModel = new InventoryTableModel();		
+		try {
+			inventoryTableModel = new InventoryTableModel();
+		} catch (SQLException | IOException | ParseException exception) {
+			String errorMessage = String.format("An error occured while attempting to load "
+					+ "the inventory list.\nThe application will now close.\nContact your system "
+					+ "administrator if the problem persists.\nReason:\n%s", exception.getMessage());
+			String errorTitle = "Unable to load inventory";
+			int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			JOptionPane.showMessageDialog(this, errorMessage, errorTitle, windowOptions);
+			exception.printStackTrace();
+			System.exit(1);
+		}
 		
+		inventoryTable = new JTable(inventoryTableModel);
 		inventoryTable = new JTable(inventoryTableModel);
 		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);		
 		
@@ -433,7 +448,7 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				createNewItem();				
+				showNewItemDialog();				
 			}
 		});
 		buttonPanel.add(addInventoryItem);
@@ -497,6 +512,9 @@ public class InventoryManagementFrame extends JFrame {
 	}
 	
 	class InventoryTableModel extends AbstractTableModel {
+		/**
+		 * Field identifiers for columns within the table
+		 */
 		private final static int ITEM_ID = 0;
 		private final static int ITEM_NAME = 1;
 		private final static int ITEM_DESCRIPTION = 2;
@@ -506,19 +524,63 @@ public class InventoryManagementFrame extends JFrame {
 		private final static int ITEM_MANUFACTURE = 6;
 		private final static int ITEM_RELEASSE_DATE = 7;
 		
-		String[] header = { "Item Number", "Name", "Description", "Type", "Units in Stock", "Unit Cost", "Manufacture", "Release Date" };
-		ArrayList<Item> inventoriedItems = new ArrayList<Item>();
-		 		
+		private String[] header = { "Item Number", "Name", "Description", "Type", "Units in Stock", "Unit Cost", "Manufacture", "Release Date" };
+		private ArrayList<Item> inventoriedItems = new ArrayList<Item>();
+		
+		private ConsoleEntityManager consoleManager;
+		private AccessoryEntityManager accessoryManager;
+		private GameEntityManager gameManager;
+		
+		/**
+		 * Populates the table inventory from the database
+		 * 
+		 * @throws IOException If database file cannot be accessed
+		 * @throws SQLException If a database error occurred
+		 * @throws ParseException If the database contains an invalid date format item
+		 */
+		public InventoryTableModel() throws IOException, SQLException, ParseException {
+			consoleManager = ConsoleEntityManager.getManager();
+			accessoryManager = AccessoryEntityManager.getManager();
+			gameManager = GameEntityManager.getManager();
+			
+			ArrayList<Console> consoles = consoleManager.getConsoles();
+			if (consoles != null)
+				inventoriedItems.addAll(consoles);
+			
+			ArrayList<Accessory> accessories = accessoryManager.getAccessories();
+			if (accessories != null)
+				inventoriedItems.addAll(accessories);
+			
+			ArrayList<Game> games = gameManager.getGames();
+			if (games != null)
+				inventoriedItems.addAll(games);
+		}
+		
+		/**
+		 * Counts the number of columns available
+		 * @return Column count
+		 */
 		@Override
 		public int getColumnCount() {
 			return header.length;
 		}
 
+		/**
+		 * Counts the total number of rows of data within the inventory
+		 * 
+		 * @return Total number of inventory rows
+		 */
 		@Override
 		public int getRowCount() {
 			return inventoriedItems.size();
 		}
 
+		/**
+		 * Retrieve a cells values
+		 * @param rowIndex The specific row to get data from
+		 * @param columnIndex the specific column to get data from
+		 * @return An cells value
+		 */
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			Item item = null; 
@@ -569,9 +631,14 @@ public class InventoryManagementFrame extends JFrame {
 			return value;
 		}
 		
+		/**
+		 * Provides the name of a column
+		 * @param columnIndex The column index to get the column name from
+		 * @return A column name
+		 */
 		@Override
-		public String getColumnName(int column) {			
-			return header[column];
+		public String getColumnName(int columnIndex) {			
+			return header[columnIndex];
 		}
 		
 	}

@@ -76,9 +76,9 @@ public class ConsoleEntityManager implements EntityManager {
 		final String createTableQuery = "CREATE TABLE IF NOT EXISTS console "
 				+ "(consoleId INTEGER UNIQUE NOT NULL, "	// consoleId = itemId or foreign key
 				+ "color TEXT NOT NULL, "
-				+ "controllersIncluded INTEGER, "
+				+ "controllersIncluded INTEGER NOT NULL, "
 				+ "diskSpace TEXT NOT NULL, "
-				+ "includedGameIds TEXT DEFAULT '', "  // comma-separated int with foreign key of games
+				+ "includedGameIds TEXT, "  // comma-separated int with foreign key of games
 				+ "modelNumber TEXT NOT NULL)";
 		
 		if (!databaseManager.tableExists("console")) {

@@ -77,7 +77,7 @@ public class GameEntityManager implements EntityManager {
 				+ "(gameId INTEGER UNIQUE NOT NULL, "	// gameId = itemId or foreign key
 				+ "numberOfDiscs INTEGER NOT NULL, "
 				+ "numberOfPlayers INTEGER NOT NULL, "
-				+ "consoleId INTEGER NOT NUL, "
+				+ "consoleId INTEGER NOT NULL, "
 				+ "esrbRating TEXT NOT NULL)";
 		
 		if (!databaseManager.tableExists("game")) {

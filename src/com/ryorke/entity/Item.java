@@ -15,8 +15,6 @@ package com.ryorke.entity;
 
 import java.util.Date;
 
-import javax.management.InvalidAttributeValueException;
-
 /**
  * Generic inventory item details
  * 

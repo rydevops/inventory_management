@@ -106,7 +106,7 @@ public class UserEntityManager implements EntityManager {
 	public void createTable() throws SQLException {
 		final String createTableQuery = "CREATE TABLE IF NOT EXISTS user "
 				+ "(userId INTEGER PRIMARY KEY, "
-				+ "username TEXT NOT NULL UNIQUE, "
+				+ "username TEXT NOT NULL UNIQUE COLLATE NOCASE, " // CASE INSENSITIVE
 				+ "password TEXT NOT NULL, "
 				+ "firstName TEXT NOT NULL, lastName TEXT NOT NULL, "
 				+ "administrator INTEGER DEFAULT 0)";

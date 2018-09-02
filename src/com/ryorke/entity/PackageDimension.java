@@ -13,7 +13,6 @@
  */
 package com.ryorke.entity;
 
-import javax.management.InvalidAttributeValueException;
 
 /**
  * Item's package dimensions
