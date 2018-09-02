@@ -203,7 +203,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	public void refreshFields() {
 		if (item != null) {
 			color.setText(item.getColor());
-			controllersIncluded.setValue(item.getControlersIncluded());
+			controllersIncluded.setValue(item.getControllersIncluded());
 			diskSpace.setText(item.getDiskSpace());
 			modelNumber.setText(item.getModelNumber());
 		}

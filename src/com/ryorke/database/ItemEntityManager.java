@@ -1,3 +1,16 @@
+/**
+ * Copyright 2018 Russell Yorke
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 		http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ryorke.database;
 
 import java.io.IOException;
@@ -15,6 +28,12 @@ import com.ryorke.entity.Item;
 import com.ryorke.entity.Manufacture;
 import com.ryorke.entity.PackageDimension;
 
+/**
+ * Provides utility operations for pushing/getting Item objects
+ * within a database
+ * 
+ * @author Russell Yorke
+ */
 public class ItemEntityManager implements EntityManager {
 	private static ItemEntityManager entityManager = null;
 	private SQLiteDBManager databaseManager = null;
@@ -130,24 +149,100 @@ public class ItemEntityManager implements EntityManager {
 		return itemFound;
 	}
 
-	public int addItem(Item item) {
-		final String insertDefaultUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) "
-				+ "VALUES ('admin', 'admin', 'Administrative', 'User', 1)";		
-		final String insertUserQuery = "INSERT INTO item "
+	/**
+	 * Inserts a new row into the item table and set the itemId on the item provided.
+	 * 
+	 * This method will also create a new manufacture if it doesn't already exist within
+	 * the database. 
+	 * 
+	 * @param item An item to insert which will also be modified to reflect the new itemId
+	 * @throws SQLException If a database error occurs
+	 */
+	public void addItem(Item item) throws SQLException {
+		final String insertItemQuery = "INSERT INTO item "
 				+ "(name, description, manufactureId, releaseDate, unitCost, "
 				+ "unitsInStock, width, height, depth, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		final String getItemIdQuery = "SELECT last_insert_rowid() AS itemId";
+		final String dateFormat = "yyyy/MM/dd";
+		SimpleDateFormat dateFormatter = new SimpleDateFormat(dateFormat);
 		
-		// TODO: Get manufactureId based on name, if it doesn't exist create it
+		// Create the manufacture entry (if it doesn't already exist) and retrieve details about
+		// that manufacture 
+		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
 		
-		return 0;	// TODO: return new itemId
+
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement insertItemStatement = dbConnection.prepareStatement(insertItemQuery)) {
+			insertItemStatement.setString(1, item.getProductName());
+			insertItemStatement.setString(2, item.getProductDescription());
+			insertItemStatement.setInt(3, manufacture.getManufactureId());
+			insertItemStatement.setString(4,  dateFormatter.format(item.getReleaseDate()));
+			insertItemStatement.setDouble(5, item.getUnitCost());
+			insertItemStatement.setInt(6, item.getUnitsInStock());
+			insertItemStatement.setFloat(7, item.getPackageDimensions().getWidth());
+			insertItemStatement.setFloat(8, item.getPackageDimensions().getHeight());
+			insertItemStatement.setFloat(9, item.getPackageDimensions().getDepth());
+			insertItemStatement.setFloat(10, item.getPackageDimensions().getWeight());
+			insertItemStatement.executeUpdate();
+			
+			// Retrieve the itemId based on the last row inserted
+			Statement lastRowIdStatement = dbConnection.createStatement();
+			ResultSet result = lastRowIdStatement.executeQuery(getItemIdQuery);
+			if (result.next()) {
+				item.setItemNumber(result.getInt("itemId"));
+			}
+		}
 	}
 	
-	public void updateItem(Item item) {
+	/**
+	 * Updates the database with the information provided in the item. If a new manufacture
+	 * needs to be created during this operation it will automatically be created. 
+	 * 
+	 * @param item Item that needs to be saved to the database
+	 * @throws SQLException If a database error occurs
+	 */
+	public void updateItem(Item item) throws SQLException {
+		final String updateItemQuery = "UPDATE item "
+				+ "SET name = ?, description = ?, manufactureId = ?, releaseDate = ?, unitCost = ?, "
+				+ "unitsInStock = ?, width = ?, height = ?, depth = ?, weight = ? "
+				+ "WHERE itemId = ?";
+		final String dateFormat = "yyyy/MM/dd";
+		SimpleDateFormat dateFormatter = new SimpleDateFormat(dateFormat);
 		
+		// Create the manufacture entry (if it doesn't already exist) and retrieve details about
+		// that manufacture 
+		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement updateItemStatement = dbConnection.prepareStatement(updateItemQuery)) {
+			updateItemStatement.setString(1, item.getProductName());
+			updateItemStatement.setString(2, item.getProductDescription());
+			updateItemStatement.setInt(3, manufacture.getManufactureId());
+			updateItemStatement.setString(4,  dateFormatter.format(item.getReleaseDate()));
+			updateItemStatement.setDouble(5, item.getUnitCost());
+			updateItemStatement.setInt(6, item.getUnitsInStock());
+			updateItemStatement.setFloat(7, item.getPackageDimensions().getWidth());
+			updateItemStatement.setFloat(8, item.getPackageDimensions().getHeight());
+			updateItemStatement.setFloat(9, item.getPackageDimensions().getDepth());
+			updateItemStatement.setFloat(10, item.getPackageDimensions().getWeight());
+			updateItemStatement.executeUpdate();
+		}
 	}
 	
-	public void deleteItem(Item item) {
+	/**
+	 * Deletes an item from the database
+	 * 
+	 * @param item The item to be deleted
+	 * @throws SQLException If an error occurs
+	 */
+	public void deleteItem(Item item) throws SQLException {
+		final String deleteItemQuery = "DELETE FROM item WHERE itemId = ?";
 		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteItemQuery)) {
+			deleteStatement.setInt(1, item.getItemNumber());			
+			deleteStatement.executeUpdate();
+		}
 	}
 	
 	@Override
