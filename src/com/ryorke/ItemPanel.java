@@ -245,26 +245,24 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	}
 	
 	/**
-	 * Creates a new Inventory Item editor with no fields populated
-	 */
-	public ItemPanel() {
-		this(null);
-	}
-	
-	/**
 	 * Creates a new Inventory Item editor with fields populated
 	 * based on the item
 	 * 
 	 * @param item A item to populate the fields with (if null no
 	 *             fields will be populated)
+	 *             
+	 * @throws NullPointerException if item is null
 	 */
-	public ItemPanel(Item item) {
+	public ItemPanel(Item item) throws NullPointerException {
+		if (item == null)
+			throw new NullPointerException("Item cannot be null");
+		
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		refreshFields();
+		displayItem();
 	}
 
 	/**
@@ -275,10 +273,10 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * @throws NullPointerException when item is null, item must be set to a valid object
 	 */
 	@Override
-	public void updateItem(Item item) throws NullPointerException {
-		if (item == null) {
-			throw new NullPointerException("Item references cannot be null");
-		}
+	public void setItem(Item item) throws NullPointerException {
+		if (item == null)
+			throw new NullPointerException("Item cannot be null");
+		
 		this.item = item;		
 	}
 
@@ -293,7 +291,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * 
 	 */
 	@Override
-	public void refreshFields() {
+	public void displayItem() {
 		SimpleDateFormat dateFormatter = (SimpleDateFormat) SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT);
 		dateFormatter.applyPattern("YYYY/MM/dd");
 		DecimalFormat dimensionFormat = new DecimalFormat("#,###0.0000");
@@ -369,34 +367,21 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	}
 	
 	/**
-	 * Perform validation and item updates on all fields within this view. 
-	 * 
-	 * @return true if all fields are validate and updated, false otherwise
-	 */
-	public boolean validateAllFields() {
-		return checkProductName() && checkProductDescription() &&
-				checkManufacture() && checkUnitsInStock() && checkUnitCost() &&
-				checkReleaseDate() && checkHeight() && checkWeight() && checkDepth() &&
-				checkWeight();
-	}
-	
-	/**
 	 * Validated the component has a valid value. If valid, the corresponding
 	 * item is updated with the value and the field is cleared of the invalid state
 	 * coloring. If the field contains invalid data it will highlight the field. 
 	 * 
 	 * @return true if field contains valid date, false otherwise. 
 	 */
-	public boolean checkProductName() {
-		String value = productName.getText();
+	public boolean checkProductName() {		
 		boolean isValid = false;
 		
-		if (value.length() > 0) {
-			item.setProductName(value);
-			setFieldStyle(productName, null, Color.WHITE);
+		String productName = this.productName.getText();
+		if (productName.length() > 0) {
+			setFieldStyle(this.productName, null, Color.WHITE);
 			isValid = true;
 		} else {
-			setFieldStyle(productName, "Product name must be provided.", INVALID_INPUT);
+			setFieldStyle(this.productName, "Product name must be provided.", INVALID_INPUT);
 		}			
 		
 		return isValid;
@@ -409,39 +394,32 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * 
 	 * @return true if field contains valid date, false otherwise. 
 	 */
-	public boolean checkProductDescription() {		
-		String value = description.getText().trim();
+	public boolean checkProductDescription() {				
 		boolean isValid = false;
 		
-		if (value.length() > 0) {
-			item.setProductDescription(value);
-			setFieldStyle(description, null, Color.WHITE);
+		String description = this.description.getText().trim();		
+		if (description.length() > 0) {
+			setFieldStyle(this.description, null, Color.WHITE);
 			isValid = true;
 		} else {				
-			setFieldStyle(description, "Product description must be provided.", INVALID_INPUT);
+			setFieldStyle(this.description, "Product description must be provided.", INVALID_INPUT);
 		}
 		
 		return isValid;
 	}
 	
 	/**
-	 * Validated the component has a valid value. If valid, the corresponding
-	 * item is updated with the value and the field is cleared of the invalid state
-	 * coloring. If the field contains invalid data it will highlight the field. 
+	 * Validates manufacture field isn't blank.  
 	 * 
 	 * @return true if field contains valid date, false otherwise. 
 	 */
 	public boolean checkManufacture() {
 		boolean isValid = false;
 		
-		// Extract information from the inner JTextField. This is required to 
-		// allow the use of an editable field that may not exist as a selectable
-		// item
-		JTextField manufactureField = (JTextField) manufacture.getEditor().getEditorComponent();
-		String value = (String) manufactureField.getText();
+		JTextField manufactureField = (JTextField) this.manufacture.getEditor().getEditorComponent();
+		String manufacture = (String) manufactureField.getText().trim();
 		
-		if (value.length() > 0) {
-			item.setManufacture(value);
+		if (manufacture.length() > 0) {
 			setFieldStyle(manufactureField, null, Color.WHITE);
 			isValid = true;
 		} else {				
@@ -461,19 +439,12 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkUnitsInStock() {
 		boolean isValid = false;
 		
-		try {
-			int value = Integer.parseInt(unitsInStock.getText().replaceAll(",", ""));
-			if (value >= 0) {
-				item.setUnitsInStock(value);
-				setFieldStyle(unitsInStock, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
-		
-		if (!isValid) {
-			setFieldStyle(unitsInStock, "Invalid units in stock. Value must be 0 or more.", INVALID_INPUT);
+		Integer unitsInStock = parseInteger(this.unitsInStock.getText());
+		if(unitsInStock == null) {
+			setFieldStyle(this.unitsInStock, "Units in stock must be 0 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.unitsInStock, null, Color.WHITE);
+			isValid = true;
 		}
 		
 		return isValid;
@@ -489,22 +460,15 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkUnitCost() {
 		boolean isValid = false;
 		
-		try {
-			double value = Double.parseDouble(unitCost.getText().replaceAll("\\$|,", ""));
-			if (value >= 0.00) {
-				item.setUnitCost(value);
-				setFieldStyle(unitCost, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
+		Double unitCost = parseDouble(this.unitCost.getText(), true);
+		if (unitCost == null) {
+			setFieldStyle(this.unitCost, "Unit cost must be $0.00 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.unitCost, null, Color.WHITE);
+			isValid = true;
+		}		
 		
-		if (!isValid) {
-			setFieldStyle(unitCost, "Invalid unit cost. Value must be 0.00 or more.", INVALID_INPUT);
-		}
-		
-		return isValid; 
+		return isValid;
 	}
 	
 	/**
@@ -516,21 +480,101 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkReleaseDate() {
 		boolean isValid = false;
+				
+		Date value = parseDate(releaseDate.getText());
+		if (value == null) {
+			setFieldStyle(releaseDate, "Invalid date provided. Date must be "
+					+ "in format of 'yyyy/MM/dd' and set to a valid date."
+					+ " (e.g. 2018/08/26).", INVALID_INPUT);			
+		} else {
+			setFieldStyle(releaseDate, null, Color.WHITE);		
+			isValid = true;
+		}
 		
+		return isValid;
+	}
+	
+	/**
+	 * Helper method for parsing dates. The method allows forward and backslashes
+	 * in the value. 
+	 * 
+	 * @param rawValue A date string in the format of 'yyyy/MM/dd' (foward or backword slashes allowed)
+	 * @return A new Date object based on rawValue or null if an error occurs. 
+	 */
+	private Date parseDate(String rawValue) {
+		Date date = null; 
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
 		formatter.setLenient(false); // Disable lenient date parsing of invalid dates
 		
 		try {
-			Date value = formatter.parse(releaseDate.getText().replaceAll("\\\\", "/"));
-			item.setReleaseDate(value);
-			setFieldStyle(releaseDate, null, Color.WHITE);
-			isValid = true;
+			rawValue = rawValue.replaceAll("\\\\", "/");
+			date = formatter.parse(rawValue);
 		} catch (ParseException pe) {
-			setFieldStyle(releaseDate, "Invalid date provided. Date must be in format of 'yyyy/MM/dd' and set to a valid date."
-					+ " (e.g. 2018/08/26).", INVALID_INPUT);	
+			// Catch but do nothing
 		}
 		
-		return isValid;
+		return date; 		
+	}
+	
+	/**
+	 * Helper method for parsing float values. The conversion ignores commas if present in string
+	 * 
+	 * @param rawValue A string containing a float value (with/without commas). 
+	 * @return A new Float instance or null (if an error occurs during parsing). 
+	 */
+	public Float parseFloat(String rawValue) {
+		Float value = null; 
+		
+		try {
+			rawValue = rawValue.replaceAll(",", "");
+			value = new Float(rawValue);
+		} catch (NumberFormatException nfe) {
+			// Catch and do nothing
+		}
+		
+		return value; 
+	}
+	
+	/**
+	 * Helper method for parsing double values. The conversion ignores commas if present in string
+	 * 
+	 * @param rawValue A string containing a double value (with/without commas).
+	 * @param isCurrency If true, parsing assumes there may be a $ character in rawValue.  
+	 * @return A new Double instance or null (if an error occurs during parsing). 
+	 */
+	public Double parseDouble(String rawValue, boolean isCurrency) {
+		Double value = null; 
+		String numberPattern = ",";
+		String currencyPattern = "\\$|,";
+		
+		try {
+			rawValue = rawValue.replaceAll((isCurrency) ? currencyPattern : numberPattern, "");
+			value = new Double(rawValue);
+		} catch (NumberFormatException nfe) {
+			// Catch and do nothing
+		}
+		
+		return value; 
+	}
+	
+	/**
+	 * Helper method for parsing integer values. The conversion ignores commas if present in string
+	 * 
+	 * @param rawValue A string containing a integer value (with/without commas).  
+	 * @return A new integer instance or null (if an error occurs during parsing). 
+	 */
+	public Integer parseInteger(String rawValue) {
+		Integer value = null; 
+		String numberPattern = ",";
+		
+		try {
+			rawValue = rawValue.replaceAll(numberPattern, "");
+			value = new Integer(rawValue);
+		} catch (NumberFormatException nfe) {
+			// Catch and do nothing
+		}
+		
+		return value; 
 	}
 	
 	/**
@@ -543,19 +587,13 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkWidth() {
 		boolean isValid = false;
 		
-		try {
-			float value = Float.parseFloat(width.getText().replaceAll(",", ""));
-			if (value >= 0.00) {
-				item.getPackageDimensions().setWidth(value);
-				setFieldStyle(width, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
+		Float tempFloat = parseFloat(width.getText());
 		
-		if (!isValid) {
+		if (tempFloat == null) {
 			setFieldStyle(width, "Invalid width. Value must be 0.00 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(width, null, Color.WHITE);
+			isValid = true;
 		}
 		
 		return isValid;
@@ -571,19 +609,13 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkHeight() {
 		boolean isValid = false;
 		
-		try {
-			float value = Float.parseFloat(height.getText().replaceAll(",", ""));
-			if (value >= 0.00) {
-				item.getPackageDimensions().setHeight(value);
-				setFieldStyle(height, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
+		Float tempFloat = parseFloat(height.getText());
 		
-		if (!isValid) {
+		if (tempFloat == null) {
 			setFieldStyle(height, "Invalid height. Value must be 0.00 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(height, null, Color.WHITE);
+			isValid = true;
 		}
 		
 		return isValid;
@@ -599,19 +631,13 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkWeight() {
 		boolean isValid = false;
 		
-		try {
-			float value = Float.parseFloat(weight.getText().replaceAll(",", ""));
-			if (value >= 0.00) {
-				item.getPackageDimensions().setWeight(value);
-				setFieldStyle(weight, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
+		Float tempFloat = parseFloat(weight.getText());
 		
-		if (!isValid) {
+		if (tempFloat == null) {
 			setFieldStyle(weight, "Invalid weight. Value must be 0.00 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(weight, null, Color.WHITE);
+			isValid = true;
 		}
 		
 		return isValid;
@@ -627,22 +653,60 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public boolean checkDepth() {
 		boolean isValid = false;
 		
-		try {
-			float value = Float.parseFloat(depth.getText().replaceAll(",", ""));
-			if (value >= 0.00) {
-				item.getPackageDimensions().setDepth(value);
-				setFieldStyle(depth, null, Color.WHITE);
-				isValid = true;
-			}
-		} catch (NumberFormatException nfe) {
-			// Do nothing here
-		}
+		Float tempFloat = parseFloat(depth.getText());
 		
-		if (!isValid) {
+		if (tempFloat == null) {
 			setFieldStyle(depth, "Invalid depth. Value must be 0.00 or more.", INVALID_INPUT);
+		} else {
+			setFieldStyle(depth, null, Color.WHITE);
+			isValid = true;
 		}
 		
 		return isValid;
+	}
+
+	/**
+	 * Performs validation on all fields
+	 * @return
+	 */
+	public boolean checkAllFields() {
+		return checkProductName() && checkProductDescription()
+		&& checkManufacture() && checkUnitsInStock() && checkUnitCost()
+		&& checkReleaseDate() && checkWidth() && checkHeight() 
+		&& checkDepth() && checkWeight();
+	}
+	
+	/**
+	 * Checks all fields for valid data and updates the item if no fields
+	 * contain errors. 
+	 * 
+	 * @return true if item was updated false otherwise. 
+	 */
+	@Override
+	public boolean updateItem() {
+		boolean updateSuccessful = false; 
+		
+		updateSuccessful = checkProductName() && checkProductDescription()
+				&& checkManufacture() && checkUnitsInStock() && checkUnitCost()
+				&& checkReleaseDate() && checkWidth() && checkHeight() 
+				&& checkDepth() && checkWeight();
+		
+		
+		if (updateSuccessful) { 
+			item.setProductName(productName.getText());
+			item.setProductDescription(description.getText());
+			JTextField manufactureField = (JTextField)manufacture.getEditor().getEditorComponent();
+			item.setManufacture(manufactureField.getText().trim());
+			item.setUnitsInStock(parseInteger(unitsInStock.getText()));
+			item.setUnitCost(parseDouble(unitCost.getText(), true));
+			item.setReleaseDate(parseDate(releaseDate.getText()));
+			item.getPackageDimensions().setWidth(parseFloat(width.getText()));
+			item.getPackageDimensions().setHeight(parseFloat(height.getText()));
+			item.getPackageDimensions().setHeight(parseFloat(depth.getText()));
+			item.getPackageDimensions().setHeight(parseFloat(weight.getText()));
+		}
+		
+		return updateSuccessful;
 	}
 	
 }

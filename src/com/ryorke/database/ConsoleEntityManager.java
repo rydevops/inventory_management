@@ -150,6 +150,11 @@ public class ConsoleEntityManager implements EntityManager {
 		final String insertConsoleQuery = "INSERT INTO console (consoleId, color, controllersIncluded, "
 				+ "diskSpace, includedGameIds, modelNumber) VALUES (?, ?, ?, ?, ?, ?)";
 		
+		// TODO: 
+		// Disable auto-commit and only save the item and console if both
+		// are successful otherwise rollback both transactions
+		// Note: Perform this for updates and delete in all other objects. 
+		
 		// Create the associated item record first to acquire a new itemId
 		itemEntityManager.addItem(console);
 		

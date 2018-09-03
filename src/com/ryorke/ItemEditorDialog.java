@@ -81,7 +81,7 @@ public class ItemEditorDialog extends JDialog {
 	 */
 	public ItemEditorDialog(Frame owner, Item item, User activeUser) {
 		super(owner, WINDOW_TITLE, true);	// Modal dialog always
-		this.item = item;	// TODO: Perform clone operation so we can modify this in place
+		this.item = item;
 		this.activeUser = activeUser;
 		saved = false;
 		initializeView();
@@ -164,7 +164,7 @@ public class ItemEditorDialog extends JDialog {
 	 */
 	public void performSave() {
 		String error = "Unable to save %s.\nReason:\n%s";
-		String title = "Problem saving";
+		String title = "Save failed";
 		int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 		saved = false;	// Always reset just in case dialog is shown multiple times in future
 		
@@ -179,9 +179,23 @@ public class ItemEditorDialog extends JDialog {
 			}
 		} else if (item instanceof Console) {
 			try {
-				ConsoleEntityManager entityManager = ConsoleEntityManager.getManager();
-				entityManager.addConsole((Console)item);
-				saved = true;
+				ItemPanel itemPanel = (ItemPanel) genericItemPanel;
+				ConsolePanel consolePanel = (ConsolePanel) itemSpecificPanel;				
+				if (itemPanel.checkAllFields() && consolePanel.checkAllFields()) {
+					itemPanel.updateItem();
+					consolePanel.updateItem();
+					
+					ConsoleEntityManager entityManager = ConsoleEntityManager.getManager();
+					if (item.getItemNumber() == 0) { // NEW ITEM
+						entityManager.addConsole((Console)item);
+					} else {  // UPDATE OF EXISTING ITEM
+						entityManager.updateConsole((Console) item);
+					}
+					saved = true;
+				} else {
+					JOptionPane.showMessageDialog(this, "Unable to save item. One or more "
+							+ "fields contain errors.", title, windowOptions);
+				}
 			} catch (SQLException | IOException exception) {
 				JOptionPane.showMessageDialog(this, String.format(error, "console", exception.getMessage()), 
 						title, windowOptions);

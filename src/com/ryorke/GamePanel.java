@@ -18,6 +18,8 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
@@ -41,6 +43,8 @@ import com.ryorke.entity.Item;
  */
 @SuppressWarnings("serial")
 public class GamePanel extends JPanel implements ItemEditor {
+	public final static Color INVALID_INPUT = new Color(255, 200, 200);
+	
 	private JSpinner numberOfDiscs;
 	private JSpinner numberOfPlayers;
 	private JTextField platformId;
@@ -120,7 +124,7 @@ public class GamePanel extends JPanel implements ItemEditor {
 		constraint.insets = new Insets(2,2,2,2);
 		constraint.fill = GridBagConstraints.BOTH;
 		
-		numberOfDiscs = new JSpinner(new SpinnerNumberModel(INITIAL_START, MIN_DISCS, MAX_DISCS, STEP_COUNT));		
+		numberOfDiscs = new JSpinner(new SpinnerNumberModel(INITIAL_START, MIN_DISCS, MAX_DISCS, STEP_COUNT));
 		JLabel numberOfDiscsLabel = createJLabel("Number of discs:", SwingConstants.RIGHT, KeyEvent.VK_U, numberOfDiscs);
 		for (int discCount = 1; discCount < 20; discCount = 20)
 		numberOfPlayers = new JSpinner(new SpinnerNumberModel(INITIAL_START, MIN_PLAYERS, MAX_PLAYERS, STEP_COUNT));
@@ -135,6 +139,23 @@ public class GamePanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, numberOfPlayers);
 		
 		platformId = new JTextField();
+		platformId.addFocusListener(new FocusListener() {
+			/**
+			 * Performs field validation when focus is lost. 
+			 * 
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkPlatformId();
+			}
+			
+			/**
+			 * Not implemented/used
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {}
+		});
 		JLabel platformIdLabel = createJLabel("Platform ID:", SwingConstants.RIGHT, KeyEvent.VK_F, platformId);
 		esrbRating = new JComboBox<String>();
 		for (String rating : getESRBRatings()) {
@@ -163,26 +184,23 @@ public class GamePanel extends JPanel implements ItemEditor {
 	}
 	
 	/**
-	 * Creates a new game item editor with no fields populated
-	 */
-	public GamePanel() {
-		this(null);
-	}
-	
-	/**
 	 * Creates a new game item editor with fields populated
 	 * based on the item
 	 * 
-	 * @param item A Game item to populate the fields with (if null no
-	 *             fields will be populated)
+	 * @param item A Game item to populate the fields with
+	 *             
+	 * @throws NullPointerException If item is set to null 
 	 */
-	public GamePanel(Game item) throws ClassCastException {		
+	public GamePanel(Game item) throws NullPointerException {
+		if (item == null)
+			throw new NullPointerException("Game items cannot be null.");
+		
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		refreshFields();
+		displayItem();
 	}
 	
 	/**
@@ -190,19 +208,20 @@ public class GamePanel extends JPanel implements ItemEditor {
 	 * 
 	 * @param item A new game item to replace the existing item
 	 * 
-	 * @throws NullPointerException when item is null, item must be set to a valid object
+	 * @throws NullPointerException when item is null
+	 * @throws ClassCastException if item is not a Game type
 	 */
 	@Override
-	public void updateItem(Item item) {
+	public void setItem(Item item) throws NullPointerException, ClassCastException {
 		if (item == null) {
-			throw new NullPointerException("Item references cannot be null");
+			throw new NullPointerException("Game items cannot be null.");
 		}
 		
 		if (!(item instanceof Game)) {
 			throw new ClassCastException("Unable to cast Item to Game Item");
 		}
 		this.item = (Game) item;		
-		refreshFields();
+		displayItem();
 	}
 	
 	/**
@@ -216,12 +235,90 @@ public class GamePanel extends JPanel implements ItemEditor {
 	 * 
 	 */
 	@Override
-	public void refreshFields() {
-		if (item != null) {
-			numberOfDiscs.setValue(item.getNumberOfDiscs());
-			numberOfPlayers.setValue(item.getNumberOfPlayers());
-			platformId.setText(Integer.toString((item.getPlatformId())));
-			esrbRating.setSelectedItem(item.getEsrbRating());
-		}
+	public void displayItem() {
+		numberOfDiscs.setValue(item.getNumberOfDiscs());
+		numberOfPlayers.setValue(item.getNumberOfPlayers());
+		platformId.setText(Integer.toString((item.getPlatformId())));
+		esrbRating.setSelectedItem(item.getEsrbRating());
 	}
+	
+	/**
+	 * Performs validation on all fields
+	 * @return
+	 */
+	public boolean checkAllFields() {
+		return checkPlatformId();
+	}
+	
+	/**
+	 * Attempts to save all fields to the current item.
+	 *  
+	 * @return True if successful false otherwise. 
+	 */
+	public boolean updateItem() {
+		boolean updateSuccessful = true;
+		
+		item.setEsrbRating((String)esrbRating.getSelectedItem());
+		item.setNumberOfDiscs((Integer)numberOfDiscs.getValue());
+		item.setNumberOfPlayers((Integer) numberOfPlayers.getValue());
+		if (checkPlatformId()) {
+			updateSuccessful = false;
+		} else {
+			try {
+				Integer platformId = Integer.parseInt(this.platformId.getText());
+				item.setPlatformId(platformId);
+			} catch (NumberFormatException nfe) {
+				// This should not be reachable as this would be caught in 
+				// the call to CheckPlatformId()
+				assert(false): "Conversion of platformId to integer failed.";
+			}
+		}
+		
+		return updateSuccessful;
+	}
+	
+	/**
+	 * Checks the platformID to ensure it's a valid console ID (alias itemNumber)
+	 * If field is invalid, the field will be updated with a tooltip and highlighted. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkPlatformId() {
+		boolean isValid = true;
+		try {
+			Integer platformId = Integer.parseInt(this.platformId.getText());
+			if (platformId > 0) {
+				// TODO: Perform check that platformId exists				
+				item.setPlatformId(platformId);
+				
+				// Clear the error (if set)
+				setFieldStyle(this.platformId, null, Color.WHITE);
+			} else {
+				isValid = false;
+			}
+		} catch (NumberFormatException nfe) {
+			isValid = false;
+		}
+		
+		if (!isValid) {
+			setFieldStyle(this.platformId, "Platform ID must be a valid ID for a console.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	
+	/**
+	 * Configures the component to display a tooltip and change the background color
+	 * 
+	 * @param component A component to modify
+	 * @param tooltip The tooltip to set (set to null to disable tooltips)
+	 * @param bgColor A color to change the background to
+	 */
+	private void setFieldStyle(JComponent component, String tooltip, Color bgColor) {
+		component.setBackground(bgColor);
+		component.setToolTipText(tooltip);
+	}
+	
+	
 }

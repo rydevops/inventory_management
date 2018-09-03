@@ -1,3 +1,16 @@
+/**
+ * Copyright 2018 Russell Yorke
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 		http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ryorke;
 
 import java.awt.BorderLayout;
@@ -5,6 +18,8 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
@@ -23,8 +38,15 @@ import javax.swing.border.TitledBorder;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Item;
 
+/**
+ * Console Inventory Panel - Provides a console specific editor 
+ * 
+ * @author Russell Yorke
+ */
 @SuppressWarnings("serial")
 public class ConsolePanel extends JPanel implements ItemEditor {
+	public final static Color INVALID_INPUT = new Color(255, 200, 200);
+	
 	private Console item;
 	private JTextField color;
 	private JTextField diskSpace;
@@ -33,25 +55,22 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	private JSpinner controllersIncluded;
 	
 	/**
-	 * Creates a blank console editor panel
-	 */
-	public ConsolePanel() {
-		this(null);
-	}
-	
-	/**
 	 * Creates a console editor panel and loads the data
 	 * into the fields based on the item. 
 	 * 
 	 * @param item The console item details
+	 * @throws NullPointerException If item is null
 	 */
-	public ConsolePanel(Console item) {
+	public ConsolePanel(Console item) throws NullPointerException {
+		if (item == null)
+			throw new NullPointerException("Console item cannot be null");
+		
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		refreshFields();
+		displayItem();
 	}
 	
 	/**
@@ -79,7 +98,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	private JLabel createJLabel(String text, int horizontalAlignment, int mnemonic, JComponent labelFor) {
 		JLabel label = new JLabel(text);
 		label.setHorizontalAlignment(horizontalAlignment);
-		label.setVerticalAlignment(SwingConstants.TOP);	// TODO: Make this configurable	
+		label.setVerticalAlignment(SwingConstants.TOP);	
 		label.setDisplayedMnemonic(mnemonic);
 		label.setLabelFor(labelFor);
 		
@@ -110,6 +129,24 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		constraint.fill = GridBagConstraints.BOTH;
 		
 		color = new JTextField();
+		color.addFocusListener(new FocusListener() {				
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkColor();
+			}
+			
+			/**
+			 * Not used
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				
+			}
+		});
 		JLabel colorLabel = createJLabel("Color:", SwingConstants.RIGHT, KeyEvent.VK_O, color);
 		addComponent(controls, layout, constraint, colorLabel);
 		constraint.weightx = 1;
@@ -117,6 +154,25 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, color);		
 		
 		diskSpace = new JTextField();
+		diskSpace.addFocusListener(new FocusListener() {
+			
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkDiskSpace();
+			}
+			
+			/**
+			 * Not used
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				
+			}
+		});
 		JLabel diskSpaceLabel = createJLabel("Disk space:", SwingConstants.RIGHT, KeyEvent.VK_K, diskSpace);		
 		constraint.gridwidth = 1;
 		constraint.weightx = 0;
@@ -126,6 +182,24 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, diskSpace);		
 		
 		modelNumber = new JTextField();
+		modelNumber.addFocusListener(new FocusListener() {
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkModelNumber();
+			}
+			
+			/**
+			 * Not used
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				
+			}
+		});
 		JLabel modelNumberLabel = createJLabel("Model number:", SwingConstants.RIGHT, KeyEvent.VK_B, modelNumber);
 		constraint.gridwidth = 1;
 		constraint.weightx = 0;
@@ -148,15 +222,9 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, controllersIncluded);
 
 		includedGameId = new JList<String>(new DefaultListModel<String>());
+		// TODO: Add implementation
 		JLabel includedGameIdLabel = createJLabel("Included games:", SwingConstants.RIGHT, KeyEvent.VK_A, includedGameId);
 		JScrollPane includedGameIdScrollView = new JScrollPane(includedGameId);
-		// *** SAMPLE DATA ***
-		// TODO: Remove and replace with database data
-		// TODO: Add method for adding game IDs to this list
-		// TODO: Cleanup/Remove this commented block
-//		DefaultListModel<String> lm = (DefaultListModel<String>) includedGameId.getModel();
-//		lm.addElement("God of War");
-		// *** END OF SAMPLE DATA
 		constraint.gridwidth = 1;
 		constraint.weightx = 0;
 		addComponent(controls, layout, constraint, includedGameIdLabel);
@@ -174,18 +242,19 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	 * @param item A new console item to replace the existing item
 	 * 
 	 * @throws NullPointerException when item is null, item must be set to a valid object
+	 * @throws ClassCastException when item is not a console type
 	 */
 	@Override
-	public void updateItem(Item item) {
+	public void setItem(Item item) throws NullPointerException, ClassCastException {
 		if (item == null) {
-			throw new NullPointerException("Item references cannot be null");
+			throw new NullPointerException("Console item cannot be null");
 		}
 		
 		if (!(item instanceof Console)) {
 			throw new ClassCastException("Unable to cast Item to Console Item");
 		}
 		this.item = (Console) item;		
-		refreshFields();
+		displayItem();
 		
 	}
 
@@ -200,12 +269,111 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	 * 
 	 */
 	@Override
-	public void refreshFields() {
-		if (item != null) {
-			color.setText(item.getColor());
-			controllersIncluded.setValue(item.getControllersIncluded());
-			diskSpace.setText(item.getDiskSpace());
-			modelNumber.setText(item.getModelNumber());
-		}
+	public void displayItem() {
+		color.setText(item.getColor());
+		controllersIncluded.setValue(item.getControllersIncluded());
+		diskSpace.setText(item.getDiskSpace());
+		modelNumber.setText(item.getModelNumber());
 	}
+
+	/**
+	 * Performs validation on all fields
+	 * @return
+	 */
+	public boolean checkAllFields() {
+		return checkColor() && checkDiskSpace() && checkModelNumber();
+	}
+	
+	/**
+	 * Checks all fields for valid data and updates the item if no fields
+	 * contain errors. 
+	 * 
+	 * @return true if item was updated false otherwise. 
+	 */
+	@Override
+	public boolean updateItem() {
+		boolean updateSuccessful = false; 
+		
+		updateSuccessful = checkColor() && checkDiskSpace() && checkModelNumber();
+		
+		if (updateSuccessful) {
+			item.setColor(color.getText());
+			item.setControllersIncluded((Integer)controllersIncluded.getValue());
+			item.setDiskSpace(diskSpace.getText());
+			item.setIncludedGameId(null);  // TODO: Implement way to gather this information
+			item.setModelNumber(modelNumber.getText());
+		}
+		
+		return updateSuccessful;
+	}
+	
+	/**
+	 * Configures the component to display a tooltip and change the background color
+	 * 
+	 * @param component A component to modify
+	 * @param tooltip The tooltip to set (set to null to disable tooltips)
+	 * @param bgColor A color to change the background to
+	 */
+	private void setFieldStyle(JComponent component, String tooltip, Color bgColor) {
+		component.setBackground(bgColor);
+		component.setToolTipText(tooltip);
+	}
+	
+	/**
+	 * Validates the color has been provided. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkColor() {
+		boolean isValid = false;
+		
+		String color = this.color.getText();		
+		if (color.length() == 0) {
+			setFieldStyle(this.color, "A color must be provided", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.color, null, Color.WHITE);
+			isValid = true;
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Validates the disk space has been provided. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkDiskSpace() {
+		boolean isValid = false;
+		
+		String diskSpace = this.diskSpace.getText();		
+		if (diskSpace.length() == 0) {
+			setFieldStyle(this.diskSpace, "Available disk space must be provided", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.diskSpace, null, Color.WHITE);
+			isValid = true;
+		}
+		
+		return isValid; 
+	}
+	
+	/**
+	 * Validates the model number has been provided. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkModelNumber() {
+		boolean isValid = false;
+		
+		String modelNumber = this.modelNumber.getText();		
+		if (modelNumber.length() == 0) {
+			setFieldStyle(this.modelNumber, "A model number must be provided", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.modelNumber, null, Color.WHITE);
+			isValid = true;
+		}
+		
+		return isValid; 
+	}
+	
 }

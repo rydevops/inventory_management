@@ -24,14 +24,23 @@ import com.ryorke.entity.Item;
  */
 public interface ItemEditor {
 	/**
-	 * Provides a new item to be used for editing
+	 * Changes the item being modified within the item editor
 	 * 
 	 * @param item A new item
 	 */
-	public void updateItem(Item item);
+	public void setItem(Item item);
 	
 	/**
-	 * Refreshes the view to redisplay the Item data
+	 * Causes the item editor to replace all fields
+	 * with details in the provided item.
 	 */
-	public void refreshFields();
+	public void displayItem();
+	
+	/**
+	 * Causes the item editor to update the item with
+	 * the currently set field values. 
+	 * 
+	 * @return true if all fields were saved to the item, false otherwise
+	 */
+	public boolean updateItem();
 }

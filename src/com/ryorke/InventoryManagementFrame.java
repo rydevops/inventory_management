@@ -220,6 +220,10 @@ public class InventoryManagementFrame extends JFrame {
 		if (newItem != null) {
 			ItemEditorDialog editor = new ItemEditorDialog(this, newItem, authenticatedUser);
 			editor.setVisible(true);
+			
+			if (editor.wasSaved()) {
+				inventoryTableModel.addRow(newItem);
+			}
 		}
 	}
 	
@@ -554,6 +558,17 @@ public class InventoryManagementFrame extends JFrame {
 			ArrayList<Game> games = gameManager.getGames();
 			if (games != null)
 				inventoriedItems.addAll(games);
+		}
+		
+		/**
+		 * Inserts a new record and updates the table
+		 * 
+		 * @param item New item to insert
+		 */
+		public void addRow(Item item) {
+			inventoriedItems.add(item);
+			int rowInsertedAt = inventoriedItems.size() - 1;
+			fireTableRowsInserted(rowInsertedAt, rowInsertedAt);
 		}
 		
 		/**
