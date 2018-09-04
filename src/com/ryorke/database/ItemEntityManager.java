@@ -76,7 +76,7 @@ public class ItemEntityManager implements EntityManager {
 	@Override
 	public void createTable() throws SQLException {
 		final String createItemTable = "CREATE TABLE IF NOT EXISTS item "
-				+ "(itemNumber INTEGER PRIMARY KEY, "
+				+ "(itemId INTEGER PRIMARY KEY, "
 				+ "name TEXT UNIQUE NOT NULL, "
 				+ "description TEXT NOT NULL, "
 				+ "manufactureId INTEGER NOT NULL, " //FOREIGN KEY
@@ -225,6 +225,7 @@ public class ItemEntityManager implements EntityManager {
 			updateItemStatement.setFloat(8, item.getPackageDimensions().getHeight());
 			updateItemStatement.setFloat(9, item.getPackageDimensions().getDepth());
 			updateItemStatement.setFloat(10, item.getPackageDimensions().getWeight());
+			updateItemStatement.setInt(11, item.getItemNumber());
 			updateItemStatement.executeUpdate();
 		}
 	}
@@ -245,6 +246,13 @@ public class ItemEntityManager implements EntityManager {
 		}
 	}
 	
+	/**
+	 * Creates a list of SQL statements necessary to recreate the
+	 * database table and data within the table. 
+	 * 
+	 * @return A list of SQL commands
+	 * @throws SQLException If a database error occurs.
+	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub

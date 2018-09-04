@@ -112,12 +112,13 @@ public class ManufactureEntityManager implements EntityManager {
 	 * @throws SQLException If a database error occurs
 	 */
 	public Manufacture findManufacture(String name) throws SQLException {
-		final String findManufactureQuery = "SELECT * FROM manufacture WHERE name = ? COLLATE NOCASE";
+		final String findManufactureQuery = "SELECT * FROM manufacture WHERE name = ?";
 		Manufacture manufacture = null;
 		
 		try (Connection dbConnection = databaseManager.getConnection();
-				Statement statement = dbConnection.createStatement()) {;
-			ResultSet result = statement.executeQuery(findManufactureQuery);
+				PreparedStatement statement = dbConnection.prepareStatement(findManufactureQuery)) {
+			statement.setString(1, name);
+			ResultSet result = statement.executeQuery();
 			if (result.next()) {
 				String manufactureName = result.getString("name");
 				int manufactureId = result.getInt("manufactureId"); 
@@ -187,6 +188,13 @@ public class ManufactureEntityManager implements EntityManager {
 		return manufactures; 
 	}
 	
+	/**
+	 * Creates a list of SQL statements necessary to recreate the
+	 * database table and data within the table. 
+	 * 
+	 * @return A list of SQL commands
+	 * @throws SQLException If a database error occurs.
+	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub

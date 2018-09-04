@@ -13,24 +13,54 @@
  */
 package com.ryorke.entity;
 
+/**
+ * A manufacture entry
+ * 
+ * @author Russell Yorke
+ */
 public class Manufacture {
 	private int manufactureId;
 	private String name;
 	
+	/**
+	 * Creates a new manufacture
+	 * 
+	 * @param manufactureId The ID of the manufacture
+	 * @param name The name of the manufacture
+	 */
 	public Manufacture(int manufactureId, String name) {
 		setManufactureId(manufactureId);
 		setName(name);
 	}
 	
+	/**
+	 * Gets the manufacture id
+	 * @return manufacture id
+	 */
 	public int getManufactureId() {
 		return manufactureId;
 	}
+	
+	/**
+	 * Sets the manufacture id
+	 * @param manufactureId A new manufacture id
+	 */
 	public void setManufactureId(int manufactureId) {
 		this.manufactureId = manufactureId;
 	}
+	
+	/**
+	 * Gets the manufacture name
+	 * @return manufacture name
+	 */
 	public String getName() {
 		return name;
 	}
+	
+	/**
+	 * Sets the manufacture name
+	 * @param name A new name
+	 */
 	public void setName(String name) {
 		this.name = name;
 	}

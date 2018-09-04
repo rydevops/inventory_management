@@ -25,7 +25,9 @@ import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -41,7 +43,6 @@ import javax.swing.table.AbstractTableModel;
 import com.ryorke.database.AccessoryEntityManager;
 import com.ryorke.database.ConsoleEntityManager;
 import com.ryorke.database.GameEntityManager;
-import com.ryorke.database.SQLiteDBManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
@@ -68,23 +69,13 @@ public class InventoryManagementFrame extends JFrame {
 	private User authenticatedUser = null;
 	private boolean promptOnClose = true; 
 	private InventoryTableModel inventoryTableModel = null; 
-	
-	/**
-	 * Controls
-	 */
+
 	private JTextField filterInventoryQuery;
 	private JButton filter;
 	private JButton addInventoryItem;
 	private JButton editInventoryItem;
 	private JButton deleteInventoryItem;
 	private JTable inventoryTable; 
-	
-	/**
-	 * Inventory data
-	 * TODO:
-	 * 		Connect data models into database
-	 */
-	ArrayList<Item> inventory = new ArrayList<Item>();
 	
 	/**
 	 * Creates a new inventory management window with a default
@@ -218,7 +209,7 @@ public class InventoryManagementFrame extends JFrame {
 		Item newItem = selectItemType();
 		
 		if (newItem != null) {
-			ItemEditorDialog editor = new ItemEditorDialog(this, newItem, authenticatedUser);
+			ItemEditorDialog editor = new ItemEditorDialog(this, newItem);
 			editor.setVisible(true);
 			
 			if (editor.wasSaved()) {
@@ -227,7 +218,18 @@ public class InventoryManagementFrame extends JFrame {
 		}
 	}
 	
-	
+	/**
+	 * Shows the edit item dialog based on the selected item. 
+	 */
+	private void showEditItemDialog() {
+		int selectedRow = inventoryTable.getSelectedRow();								
+		ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
+		editor.setVisible(true);
+		
+		if (editor.wasSaved()) {
+			inventoryTableModel.fireTableRowsUpdated(selectedRow, selectedRow);
+		}
+	}
 	
 	/**
 	 * Promotes user for an item type to be created and generates a new default item of that type. 
@@ -273,7 +275,6 @@ public class InventoryManagementFrame extends JFrame {
 			System.exit(1);
 		}
 		
-		inventoryTable = new JTable(inventoryTableModel);
 		inventoryTable = new JTable(inventoryTableModel);
 		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);		
 		
@@ -468,9 +469,7 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int selectedRow = inventoryTable.getSelectedRow();								
-				ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventory.get(selectedRow), authenticatedUser);
-				editor.setVisible(true);				
+				showEditItemDialog();				
 			}
 		});
 		buttonPanel.add(editInventoryItem);
@@ -486,13 +485,48 @@ public class InventoryManagementFrame extends JFrame {
 				 */
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Delete Item action not yet implemented", "Deleting Item", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+					deleteSelectedItem();
 				}
 			});
 			buttonPanel.add(deleteInventoryItem);
 		}
 		
 		return buttonPanel;
+	}
+	
+	/**
+	 * Deletes the selected item from the table and database
+	 */
+	public void deleteSelectedItem() {
+		int selectedItemIndex = inventoryTable.getSelectedRow();
+		String message;
+		String title;
+		int options;
+		
+		if (selectedItemIndex >= 0) {
+			message = "About to delete selected item. Are you sure?";
+			title = "Delete item?";
+			options = JOptionPane.YES_NO_OPTION;
+			
+			int response = JOptionPane.showConfirmDialog(this, message, title, options);
+			
+			if (response == JOptionPane.YES_OPTION) {
+				try {
+					inventoryTableModel.deleteRow(selectedItemIndex);
+				} catch (SQLException exception) {
+					String errorMessage = String.format("Unable to delete selected item.\nReason:\n%s", exception.getMessage());
+					JOptionPane.showMessageDialog(null, errorMessage, "Item deletion failed", 
+							JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		} else {
+			message = "An item must be selected before performing a delete.";
+			title = "Delete failed";
+			options = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+			JOptionPane.showMessageDialog(this, message, title, options);			
+		}
+		
 	}
 	
 	/**
@@ -515,6 +549,13 @@ public class InventoryManagementFrame extends JFrame {
 		dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 	}
 	
+	/**
+	 * Manages the inventory dispalyed in a JTable including pulling in the data
+	 * from a database, added to a database, and deletes items. 
+	 * 
+	 * @author Russell Yorke
+	 *
+	 */
 	class InventoryTableModel extends AbstractTableModel {
 		/**
 		 * Field identifiers for columns within the table
@@ -569,6 +610,40 @@ public class InventoryManagementFrame extends JFrame {
 			inventoriedItems.add(item);
 			int rowInsertedAt = inventoriedItems.size() - 1;
 			fireTableRowsInserted(rowInsertedAt, rowInsertedAt);
+		}
+		
+		/**
+		 * Deletes an item from the inventory model and database
+		 * 
+		 * @param rowIndex The row to delete
+		 * @throws IndexOutOfBoundsException If rowIndex is invalid
+		 * @throws SQLException If a database error occurs.
+		 */
+		public void deleteRow(int rowIndex) throws IndexOutOfBoundsException, SQLException {
+			Item selectedItem = inventoriedItems.get(rowIndex);
+						
+			if (selectedItem instanceof Accessory) {
+				accessoryManager.deleteAccessory((Accessory)selectedItem);				
+			} else if (selectedItem instanceof Console) {
+				consoleManager.deleteConsole((Console)selectedItem);
+			} else if (selectedItem instanceof Game) {
+				gameManager.deleteGame((Game)selectedItem);
+			}
+			
+			inventoriedItems.remove(selectedItem);
+			fireTableRowsDeleted(rowIndex, rowIndex);			
+		}
+		
+		
+		/**
+		 * Gets the Item object at the requested row
+		 * @param rowIndex The item index to retrieve
+		 * @return an item
+		 * @throws IndexOutOfBoundsException if rowIndex is invalid
+		 */
+		public Item getRow(int rowIndex) throws IndexOutOfBoundsException {
+			Item selectedItem = inventoriedItems.get(rowIndex);
+			return selectedItem;
 		}
 		
 		/**
@@ -637,8 +712,9 @@ public class InventoryManagementFrame extends JFrame {
 					value = item.getManufacture();
 					break;
 				case ITEM_RELEASSE_DATE:
-					// TODO: Validate output format to ensure it's converted as expected based on locale
-					value = item.getReleaseDate();
+					SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+					Date releaseDate = item.getReleaseDate();
+					value = formatter.format(releaseDate);
 					break;
 				}
 			}

@@ -65,11 +65,6 @@ public class InventoryDBManagementFrame extends JFrame {
 	private JButton close;
 	
 	/**
-	 * TODO LIST: 
-	 * 1. the executeAction button doesn't update when the radio buttons are selected
-	 *    and this needs to be fixed
-	 */
-	/**
 	 * Creates a new inventory management window with a default
 	 * title and no owner
 	 */
@@ -105,6 +100,10 @@ public class InventoryDBManagementFrame extends JFrame {
 		setVisible(true);		
 	}
 	
+	/**
+	 * Creates the progress bar for import/export operations
+	 * @return A new panel containing the progress bar
+	 */
 	private JPanel createProgressBar() {
 		BorderLayout layoutManager = new BorderLayout(); 
 		JPanel panel = new JPanel(layoutManager);
@@ -118,6 +117,11 @@ public class InventoryDBManagementFrame extends JFrame {
 		return panel;		
 	}
 	
+	/**
+	 * Creates the action buttons
+	 * 
+	 * @return A new panel containing action buttons
+	 */
 	private JPanel createButtons() {
 		BorderLayout layoutManager = new BorderLayout();
 		layoutManager.setHgap(5);
@@ -168,7 +172,11 @@ public class InventoryDBManagementFrame extends JFrame {
 			 */
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				overwriteDatabase.setEnabled(importDatabase.isSelected());				
+				overwriteDatabase.setEnabled(importDatabase.isSelected());
+				if (importDatabase.isSelected())
+					executeAction.setText("Import");
+				else
+					executeAction.setText("Export");
 			}
 		});
 		

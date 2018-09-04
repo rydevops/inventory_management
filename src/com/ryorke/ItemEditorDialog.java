@@ -38,7 +38,6 @@ import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
-import com.ryorke.entity.User;
 
 /**
  * Inventory management frame will create a new view frame
@@ -54,15 +53,11 @@ public class ItemEditorDialog extends JDialog {
 	// Window controls
 	private JPanel genericItemPanel;
 	private JPanel itemSpecificPanel;
-	private JButton deleteItem;
 	private JButton saveItem;
 	private JButton cancel;
 	
-	private Item item;	
-	private User activeUser;
+	private Item item;
 	private boolean saved = false;	// Flag to indicate that user saved the item
-	
-	// TODO: Load manufacture list (in ItemPanel)
 	
 	/**
 	 * Provides confirmation if the user saved the item being edited or 
@@ -79,10 +74,9 @@ public class ItemEditorDialog extends JDialog {
 	 * 
 	 * @param item An item to edit. Pass null to create a new item
 	 */
-	public ItemEditorDialog(Frame owner, Item item, User activeUser) {
+	public ItemEditorDialog(Frame owner, Item item) {
 		super(owner, WINDOW_TITLE, true);	// Modal dialog always
 		this.item = item;
-		this.activeUser = activeUser;
 		saved = false;
 		initializeView();
 	}
@@ -112,7 +106,7 @@ public class ItemEditorDialog extends JDialog {
 		}
 		contentPane.add(editorPanel, BorderLayout.CENTER);
 		
-		JPanel buttonPanel = new JPanel(new GridLayout(1,3));		
+		JPanel buttonPanel = new JPanel(new GridLayout(1,2));		
 		
 		saveItem = new JButton("Save");
 		saveItem.setMnemonic(KeyEvent.VK_V);
@@ -129,16 +123,7 @@ public class ItemEditorDialog extends JDialog {
 			}
 		});
 		buttonPanel.add(saveItem);
-		
-		
-		if (activeUser.isAdministrator()) {
-			deleteItem = new JButton("Delete");
-			deleteItem.setMnemonic(KeyEvent.VK_I);		
-			buttonPanel.add(deleteItem);
-		}		
-		
-		
-		
+						
 		cancel = new JButton("Cancel");
 		cancel.setMnemonic(KeyEvent.VK_A);
 		cancel.addActionListener(new ActionListener() {
@@ -168,23 +153,28 @@ public class ItemEditorDialog extends JDialog {
 		int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 		saved = false;	// Always reset just in case dialog is shown multiple times in future
 		
-		if (item instanceof Accessory) {			
-			try {
-				AccessoryEntityManager entityManager = AccessoryEntityManager.getManager();
-				entityManager.addAccessory((Accessory)item);
-				saved = true;
-			} catch (SQLException | IOException exception) {
-				JOptionPane.showMessageDialog(this, String.format(error, "accessory", exception.getMessage()), 
-						title, windowOptions);
-			}
-		} else if (item instanceof Console) {
-			try {
-				ItemPanel itemPanel = (ItemPanel) genericItemPanel;
-				ConsolePanel consolePanel = (ConsolePanel) itemSpecificPanel;				
-				if (itemPanel.checkAllFields() && consolePanel.checkAllFields()) {
-					itemPanel.updateItem();
-					consolePanel.updateItem();
-					
+		ItemEditor itemPanel = (ItemEditor) genericItemPanel;
+		ItemEditor specificPanel = (ItemEditor) itemSpecificPanel;
+		
+		if (itemPanel.checkAllFields() && specificPanel.checkAllFields()) {
+			itemPanel.updateItem();
+			specificPanel.updateItem();
+			
+			if (item instanceof Accessory) {
+				try {				
+					AccessoryEntityManager entityManager = AccessoryEntityManager.getManager();
+					if (item.getItemNumber() == 0) { // NEW ITEM
+						entityManager.addAccessory((Accessory)item);
+					} else { // UPDATE EXISTING ITEM
+						entityManager.updateAccessory((Accessory)item);
+					}
+					saved = true;
+				} catch (SQLException | IOException exception) {
+					JOptionPane.showMessageDialog(this, String.format(error, "accessory", exception.getMessage()), 
+							title, windowOptions);
+				}
+			} else if (item instanceof Console) {
+				try {										
 					ConsoleEntityManager entityManager = ConsoleEntityManager.getManager();
 					if (item.getItemNumber() == 0) { // NEW ITEM
 						entityManager.addConsole((Console)item);
@@ -192,28 +182,28 @@ public class ItemEditorDialog extends JDialog {
 						entityManager.updateConsole((Console) item);
 					}
 					saved = true;
-				} else {
-					JOptionPane.showMessageDialog(this, "Unable to save item. One or more "
-							+ "fields contain errors.", title, windowOptions);
+				}  catch (SQLException | IOException exception) {
+					JOptionPane.showMessageDialog(this, String.format(error, "console", exception.getMessage()), 
+							title, windowOptions);
 				}
-			} catch (SQLException | IOException exception) {
-				JOptionPane.showMessageDialog(this, String.format(error, "console", exception.getMessage()), 
-						title, windowOptions);
-			}
-		} else if (item instanceof Game) {
-			try {
-				GameEntityManager entityManager = GameEntityManager.getManager();
-				entityManager.addGame((Game)item);
-				saved = true;
-			} catch (SQLException | IOException exception) {
-				JOptionPane.showMessageDialog(this, String.format(error, "game", exception.getMessage()), 
-						title, windowOptions);
+			} else if (item instanceof Game) {
+				try {
+					GameEntityManager entityManager = GameEntityManager.getManager();
+					if (item.getItemNumber() == 0) { // NEW ITEM
+						entityManager.addGame((Game)item);
+					} else { // UPDATE EXISTING ITEM
+						entityManager.updateGame((Game)item);
+					}
+					saved = true;
+				} catch (SQLException | IOException exception) {
+					JOptionPane.showMessageDialog(this, String.format(error, "game", exception.getMessage()), 
+							title, windowOptions);
+				}
 			}
 		} else {
-			// Should not be possible to reach this code unless a new item type has been
-			// created and not handled here. 
-			assert(false): "performSave unable to complete due to unknown item type.";			
-		}
+			JOptionPane.showMessageDialog(this, "Unable to save item. One or more "
+					+ "fields contain errors.", title, windowOptions);
+		}		
 		
 		if (wasSaved()) {
 			this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));

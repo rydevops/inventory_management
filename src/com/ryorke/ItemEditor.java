@@ -43,4 +43,12 @@ public interface ItemEditor {
 	 * @return true if all fields were saved to the item, false otherwise
 	 */
 	public boolean updateItem();
+	
+	
+	/**
+	 * Performs field validation for all fields
+	 * 
+	 * @return true if no validation errors occured, false otherwise. 
+	 */
+	public boolean checkAllFields();
 }

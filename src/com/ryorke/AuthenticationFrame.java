@@ -61,6 +61,7 @@ public class AuthenticationFrame extends JFrame {
 	private int invalidLoginCount = 0;
 	
 	private UserEntityManager userEntityManager = null;
+	
 	/**
 	 * Create a new authentication window with a default title
 	 */

@@ -121,7 +121,7 @@ public class AccessoryEntityManager implements EntityManager {
 			}
 		}
 		
-		return null; 
+		return accessories; 
 	}
 
 	/**
@@ -143,7 +143,7 @@ public class AccessoryEntityManager implements EntityManager {
 			insertStatement.setInt(1, accessory.getItemNumber());
 			insertStatement.setString(2, accessory.getColor());
 			insertStatement.setInt(3, accessory.getPlatformId());
-			insertStatement.setString(6, accessory.getModelNumber());
+			insertStatement.setString(4, accessory.getModelNumber());
 			
 			insertStatement.executeUpdate();
 		}
@@ -190,6 +190,13 @@ public class AccessoryEntityManager implements EntityManager {
 		}
 	}
 	
+	/**
+	 * Creates a list of SQL statements necessary to recreate the
+	 * database table and data within the table. 
+	 * 
+	 * @return A list of SQL commands
+	 * @throws SQLException If a database error occurs.
+	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub

@@ -54,10 +54,6 @@ import com.ryorke.database.UserEntityManager;
 import com.ryorke.entity.User;
 import com.ryorke.entity.exception.InvalidUserAttributeException;
 
-// TODO: 
-// 1. Make table sortable
-// 4. Add catch while in editing mode (either Add user or edit) that prevents accidental
-//	  closing of the window by prompting if they are sure. 
 /**
  * User management provides functionality to adding, deleting and modifying
  * users. 

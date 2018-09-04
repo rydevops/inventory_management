@@ -136,7 +136,7 @@ public class ConsoleEntityManager implements EntityManager {
 			}
 		}
 		
-		return null; 
+		return consoles; 
 	}
 
 	/**
@@ -150,11 +150,6 @@ public class ConsoleEntityManager implements EntityManager {
 		final String insertConsoleQuery = "INSERT INTO console (consoleId, color, controllersIncluded, "
 				+ "diskSpace, includedGameIds, modelNumber) VALUES (?, ?, ?, ?, ?, ?)";
 		
-		// TODO: 
-		// Disable auto-commit and only save the item and console if both
-		// are successful otherwise rollback both transactions
-		// Note: Perform this for updates and delete in all other objects. 
-		
 		// Create the associated item record first to acquire a new itemId
 		itemEntityManager.addItem(console);
 		
@@ -167,11 +162,13 @@ public class ConsoleEntityManager implements EntityManager {
 			insertStatement.setString(6, console.getModelNumber());
 			
 			String includedGameIds = null;
-			for (int gameId : console.getIncludedGameId()) {
-				if (includedGameIds == null) {
-					includedGameIds = Integer.toString(gameId);
-				} else {
-					includedGameIds += "," + Integer.toString(gameId);
+			if (console.getIncludedGameId() != null) {
+				for (int gameId : console.getIncludedGameId()) {
+					if (includedGameIds == null) {
+						includedGameIds = Integer.toString(gameId);
+					} else {
+						includedGameIds += "," + Integer.toString(gameId);
+					}
 				}
 			}
 			insertStatement.setString(5, includedGameIds);
@@ -202,16 +199,19 @@ public class ConsoleEntityManager implements EntityManager {
 			updateStatement.setString(5, console.getModelNumber());
 			
 			String includedGameIds = null;
-			for (int gameId : console.getIncludedGameId()) {
-				if (includedGameIds == null) {
-					includedGameIds = Integer.toString(gameId);
-				} else {
-					includedGameIds += "," + Integer.toString(gameId);
+			if (console.getIncludedGameId() != null) {
+				for (int gameId : console.getIncludedGameId()) {
+					if (includedGameIds == null) {
+						includedGameIds = Integer.toString(gameId);
+					} else {
+						includedGameIds += "," + Integer.toString(gameId);
+					}
 				}
 			}
 			updateStatement.setString(4, includedGameIds);
 			
 			updateStatement.executeUpdate();
+			
 		}
 	}
 	
@@ -232,6 +232,13 @@ public class ConsoleEntityManager implements EntityManager {
 		}
 	}
 	
+	/**
+	 * Creates a list of SQL statements necessary to recreate the
+	 * database table and data within the table. 
+	 * 
+	 * @return A list of SQL commands
+	 * @throws SQLException If a database error occurs.
+	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub

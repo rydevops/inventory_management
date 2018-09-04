@@ -91,7 +91,7 @@ public class GameEntityManager implements EntityManager {
 	/**
 	 * Retrieves a list of games from the database
 	 * 
-	 * @return A list of games
+	 * @return A list of games or null if no games are found
 	 * @throws SQLException If a database error occurs
 	 * @throws ParseException If a release date was incorrectly stored within the database. 
 	 */
@@ -125,7 +125,7 @@ public class GameEntityManager implements EntityManager {
 			}
 		}
 		
-		return null; 
+		return games; 
 	}
 
 	/**
@@ -196,6 +196,13 @@ public class GameEntityManager implements EntityManager {
 		}
 	}
 	
+	/**
+	 * Creates a list of SQL statements necessary to recreate the
+	 * database table and data within the table. 
+	 * 
+	 * @return A list of SQL commands
+	 * @throws SQLException If a database error occurs.
+	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
 		// TODO Auto-generated method stub

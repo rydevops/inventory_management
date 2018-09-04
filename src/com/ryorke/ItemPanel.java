@@ -697,7 +697,8 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 			item.setProductDescription(description.getText());
 			JTextField manufactureField = (JTextField)manufacture.getEditor().getEditorComponent();
 			item.setManufacture(manufactureField.getText().trim());
-			item.setUnitsInStock(parseInteger(unitsInStock.getText()));
+			String unitsInStock = this.unitsInStock.getText();			
+			item.setUnitsInStock(parseInteger(unitsInStock));
 			item.setUnitCost(parseDouble(unitCost.getText(), true));
 			item.setReleaseDate(parseDate(releaseDate.getText()));
 			item.getPackageDimensions().setWidth(parseFloat(width.getText()));
