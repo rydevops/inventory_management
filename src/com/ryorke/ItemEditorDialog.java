@@ -99,7 +99,7 @@ public class ItemEditorDialog extends JDialog {
 		} else if (item instanceof Accessory) {
 			itemSpecificPanel = new AccessoryPanel((Accessory)item);			
 		} else if (item instanceof Console) {
-			itemSpecificPanel = new ConsolePanel((Console)item);			
+			itemSpecificPanel = new ConsolePanel(this, (Console)item);			
 		}
 		if (itemSpecificPanel != null) {
 			editorPanel.add(itemSpecificPanel);

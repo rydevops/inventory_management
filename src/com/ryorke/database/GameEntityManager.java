@@ -127,6 +127,48 @@ public class GameEntityManager implements EntityManager {
 		
 		return games; 
 	}
+	
+	/**
+	 * Retrieves a list of games associated with a specific console
+	 * @param consoleId The console ID to look for
+	 * @return A filtered list of games with the consoleId provided
+	 * @throws SQLException If a database error occurs
+	 * @throws ParseException If a value stored in the database is not formatted correctly. 
+	 */
+	public ArrayList<Game> getGames(int consoleId) throws SQLException, ParseException {
+		final String getGamesByConsoleIdQuery = "SELECT * FROM game WHERE consoleId = ?";
+		ArrayList<Game> games = null;
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement statement = dbConnection.prepareStatement(getGamesByConsoleIdQuery)) {
+			
+			statement.setInt(1, consoleId);
+			ResultSet gamesResult = statement.executeQuery();
+			while (gamesResult.next()) {
+				int gameId = gamesResult.getInt("gameId");
+				int numberOfDiscs = gamesResult.getInt("numberOfDiscs");
+				int numberOfPlayers = gamesResult.getInt("numberOfPlayers");
+				String esrbRating = gamesResult.getString("esrbRating");
+				
+				Game game = new Game();
+				game.setItemNumber(gameId);
+				game.setNumberOfDiscs(numberOfDiscs);
+				game.setNumberOfPlayers(numberOfPlayers);
+				game.setPlatformId(consoleId);
+				game.setEsrbRating(esrbRating);
+				
+				itemEntityManager.loadItem(game);
+				
+				if (games == null)
+					games = new ArrayList<Game>();
+				
+				games.add(game);
+			}
+		}
+		
+		return games; 
+		
+	}
 
 	/**
 	 * Creates a new game record (and associated item) within database. 

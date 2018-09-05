@@ -15,23 +15,24 @@ package com.ryorke;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dialog.ModalityType;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -39,11 +40,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 
-import com.ryorke.database.GameEntityManager;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
@@ -64,6 +66,9 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	private JList<String> includedGameId;
 	private JSpinner controllersIncluded;
 	private JButton addGame;
+	private JDialog parent; 
+	
+	private ArrayList<Game> includedGamesList;
 	
 	/**
 	 * Creates a console editor panel and loads the data
@@ -72,9 +77,11 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	 * @param item The console item details
 	 * @throws NullPointerException If item is null
 	 */
-	public ConsolePanel(Console item) throws NullPointerException {
+	public ConsolePanel(JDialog parent, Console item) throws NullPointerException {
 		if (item == null)
 			throw new NullPointerException("Console item cannot be null");
+		
+		this.parent = parent;
 		
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
@@ -257,42 +264,32 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	}
 	
 	private void addIncludedGame() {
-		// TODO: Come up with a better way to implement this function
-		// IDEAS:
-		//    Create a new dialog that filters games to only games available for this console
-		//	  and then provide an option to select "include" for one or more games. Clicking ok
-		//    will return a results of games and then use a default list model to host the
-		//    game name while still providing access to the gameIds. 
-//		try { 
-//			GameEntityManager gameManager = GameEntityManager.getManager();		
-//			ArrayList<Game> availableGames = gameManager.getGames();
-//			
-//			if (availableGames != null) {
-//				ArrayList<Game> filteredGameById = ArrayList<Game>();
-//				for (Game game : availableGames) {
-//					if (game.getItemNumber() == item.getItemNumber()) {
-//						filteredGameById.add(game);
-//					}
-//				}
-//				
-//				if (!filteredGameById.isEmpty()) {
-//					String[] gameList = new String[filteredGameById.size()];
-//					for (int index = 0; index < filteredGameById.size(); index++) {
-//						gameList[index] = filteredGameById(index).getName() + filteredGameById.get(index).getItemNumber();
-//					}
-//				} else {
-//					JOptionPane.showMessageDialog(this, "No games exist in the inventory.", 
-//							"No games available", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-//				}
-//			} else {
-//				JOptionPane.showMessageDialog(this, "No games exist in the inventory.", 
-//						"No games available", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-//			}
-//		} catch (SQLException | IOException | ParseException exception) {
-//			JOptionPane.showMessageDialog(this, "An error occured while accessing "
-//					+ "the inventory database:\nReason:\n" + exception.getMessage(), 
-//					"Unable to query database", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-//		}
+		try {
+			GameSelectionDialog gameSelectionDialog = new GameSelectionDialog(parent, item.getItemNumber());
+			if (gameSelectionDialog.getGameCount() > 0) {
+				gameSelectionDialog.setVisible(true);
+				if (gameSelectionDialog.wasSaved()) {
+					includedGamesList = gameSelectionDialog.getIncludedGames();
+					
+					if (includedGamesList != null) {
+						DefaultListModel<String> model = (DefaultListModel<String>)includedGameId.getModel();
+						model.clear();
+						for (Game game : includedGamesList ) {
+							int gameId = game.getItemNumber();
+							String gameName = game.getProductName();
+							model.addElement(String.format("%d - %s", gameId, gameName));					
+						}
+					} 
+				}
+			} else {
+				JOptionPane.showMessageDialog(this, "No games found for this console", 
+						"No games found", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+				
+			}
+		} catch (Exception exception) {
+			JOptionPane.showMessageDialog(this, "Unable to load game list", 
+					"Error loading game list", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+		}
 	}
 	
 	/**
@@ -359,9 +356,12 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		if (updateSuccessful) {
 			item.setColor(color.getText());
 			item.setControllersIncluded((Integer)controllersIncluded.getValue());
-			item.setDiskSpace(diskSpace.getText());
-			item.setIncludedGameId(null);  // TODO: Implement way to gather this information
+			item.setDiskSpace(diskSpace.getText());			
 			item.setModelNumber(modelNumber.getText());
+			
+			// TODO: STORE INCLUDE GAME ITEMS IN ARRAY
+			// TODO: (ELSEWHERE) Load the game included list when editing an item
+			item.setIncludedGameId(null);  // TODO: Implement way to gather this information
 		}
 		
 		return updateSuccessful;
