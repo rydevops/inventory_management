@@ -288,6 +288,9 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		return controls;
 	}
 	
+	/**
+	 * Remove one or more selected games within the included games list
+	 */
 	private void removeSelectedGame() {
 		DefaultListModel<Game> model = (DefaultListModel<Game>) includedGamesList.getModel();
 		int[] selectedGameIndices = includedGamesList.getSelectedIndices();
@@ -301,6 +304,9 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		
 	}
 	
+	/**
+	 * Prompts user for games to included and adds them to the games included list
+	 */
 	private void addIncludedGame() {
 		try {
 			DefaultListModel<Game> model = (DefaultListModel<Game>) includedGamesList.getModel();
