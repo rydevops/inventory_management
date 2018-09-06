@@ -64,7 +64,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		displayItem();
+		refreshFields();
 	}
 	
 	/**
@@ -222,7 +222,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		}
 		
 		this.item = (Accessory) item;		
-		displayItem();
+		refreshFields();
 		
 	}
 
@@ -236,7 +236,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	 *          this method. 
 	 */
 	@Override
-	public void displayItem() {
+	public void refreshFields() {
 		color.setText(item.getColor());
 		modelNumber.setText(item.getModelNumber());
 		platformId.setText(Integer.toString(item.getPlatformId()));

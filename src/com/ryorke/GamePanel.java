@@ -200,7 +200,7 @@ public class GamePanel extends JPanel implements ItemEditor {
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		displayItem();
+		refreshFields();
 	}
 	
 	/**
@@ -221,7 +221,7 @@ public class GamePanel extends JPanel implements ItemEditor {
 			throw new ClassCastException("Unable to cast Item to Game Item");
 		}
 		this.item = (Game) item;		
-		displayItem();
+		refreshFields();
 	}
 	
 	/**
@@ -235,7 +235,7 @@ public class GamePanel extends JPanel implements ItemEditor {
 	 * 
 	 */
 	@Override
-	public void displayItem() {
+	public void refreshFields() {
 		numberOfDiscs.setValue(item.getNumberOfDiscs());
 		numberOfPlayers.setValue(item.getNumberOfPlayers());
 		platformId.setText(Integer.toString((item.getPlatformId())));

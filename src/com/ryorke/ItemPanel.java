@@ -262,7 +262,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
-		displayItem();
+		refreshFields();
 	}
 
 	/**
@@ -291,7 +291,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * 
 	 */
 	@Override
-	public void displayItem() {
+	public void refreshFields() {
 		SimpleDateFormat dateFormatter = (SimpleDateFormat) SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT);
 		dateFormatter.applyPattern("YYYY/MM/dd");
 		DecimalFormat dimensionFormat = new DecimalFormat("#,###0.0000");

@@ -222,12 +222,17 @@ public class InventoryManagementFrame extends JFrame {
 	 * Shows the edit item dialog based on the selected item. 
 	 */
 	private void showEditItemDialog() {
-		int selectedRow = inventoryTable.getSelectedRow();								
-		ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
-		editor.setVisible(true);
-		
-		if (editor.wasSaved()) {
-			inventoryTableModel.fireTableRowsUpdated(selectedRow, selectedRow);
+		int selectedRow = inventoryTable.getSelectedRow();	
+		if (selectedRow > -1) {
+			ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
+			editor.setVisible(true);
+			
+			if (editor.wasSaved()) {
+				inventoryTableModel.fireTableRowsUpdated(selectedRow, selectedRow);
+			}
+		} else {
+			JOptionPane.showMessageDialog(this, "No item selected to be edited", 
+					"No item selected", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	

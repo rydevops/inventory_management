@@ -127,5 +127,14 @@ public class Game extends Item {
 		this.esrbRating = esrbRating;
 	}
 	
+	/**
+	 * Returns a simple string representation of this game including the
+	 * game ID and game name
+	 * 
+	 * @return A string representation of this game
+	 */
+	public String toString() {
+		return getItemNumber() + " - " + getProductName();
+	}
 	
 }

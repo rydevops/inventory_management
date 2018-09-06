@@ -29,7 +29,7 @@ public class GameSelectionDialog extends JDialog {
 	private GameTableModel tableModel;
 	private boolean wasSaved = false; 
 	
-	public GameSelectionDialog(JDialog owner, int consoleId) throws SQLException, IOException, ParseException {
+	public GameSelectionDialog(JDialog owner, int consoleId, int[] existingGameIdsIncluded) throws SQLException, IOException, ParseException {
 		super(owner, true);
 		Container contentPane = getContentPane();
 		contentPane.setLayout(new BorderLayout());
@@ -37,7 +37,7 @@ public class GameSelectionDialog extends JDialog {
 		JLabel instructions = new JLabel("Select all games to include:");
 		contentPane.add(instructions, BorderLayout.NORTH);
  	
-		tableModel = new GameTableModel(consoleId);
+		tableModel = new GameTableModel(consoleId, existingGameIdsIncluded);
 		JTable gameList = new JTable(tableModel);
 		gameList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		gameList.setCellSelectionEnabled(false);
@@ -104,11 +104,22 @@ public class GameSelectionDialog extends JDialog {
 		private ArrayList<Game> gameList;
 		private boolean[] gameIncluded; 
 		
-		public GameTableModel(int consoleId) throws SQLException, IOException, ParseException {
+		public GameTableModel(int consoleId, int[] existingGameIdsIncluded) throws SQLException, IOException, ParseException {
 			gameManager = GameEntityManager.getManager();
 			gameList = gameManager.getGames(consoleId);
 			if (gameList != null && gameList.size() > 0)
 				gameIncluded = new boolean[gameList.size()];
+			
+			if (existingGameIdsIncluded != null) {
+				for (int gameIndex = 0; gameIndex < gameList.size(); gameIndex++) {
+					for (int includedGameIndex = 0; includedGameIndex < existingGameIdsIncluded.length; includedGameIndex++) {
+						if (gameList.get(gameIndex).getItemNumber() == existingGameIdsIncluded[includedGameIndex]) {
+							gameIncluded[gameIndex] = true; // Toggle the checkbox on
+							break;	// Skip the rest of the existing game list and continue
+						}
+					}
+				}
+			}
 		}
 		
 		public ArrayList<Game> getIncludedGames() {
@@ -165,8 +176,8 @@ public class GameSelectionDialog extends JDialog {
 		}
 		
 		@Override
-		public Class getColumnClass(int columnIndex) {
-			Class type = null; 
+		public Class<?> getColumnClass(int columnIndex) {
+			Class<?> type = null; 
 			
 			switch (columnIndex) {
 			case FIELD_GAME_INCLUDED:

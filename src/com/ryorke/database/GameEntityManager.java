@@ -171,6 +171,42 @@ public class GameEntityManager implements EntityManager {
 	}
 
 	/**
+	 * Retrieves a game from the database
+	 * @param gameId The game ID to look for
+	 * @return A game if found, null otherwise
+	 * @throws SQLException If a database error occurs
+	 * @throws ParseException If a value stored in the database is not formatted correctly. 
+	 */
+	public Game getGame(int gameId) throws SQLException, ParseException {
+		final String getGameByGameIdQuery = "SELECT * FROM game WHERE gameId = ?";
+		Game game = null;
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement statement = dbConnection.prepareStatement(getGameByGameIdQuery)) {
+			
+			statement.setInt(1, gameId);
+			ResultSet gameResult = statement.executeQuery();
+			if (gameResult.next()) {
+				int numberOfDiscs = gameResult.getInt("numberOfDiscs");
+				int numberOfPlayers = gameResult.getInt("numberOfPlayers");
+				String esrbRating = gameResult.getString("esrbRating");
+				int consoleId = gameResult.getInt("consoleId");
+				
+				game = new Game();
+				game.setItemNumber(gameId);
+				game.setNumberOfDiscs(numberOfDiscs);
+				game.setNumberOfPlayers(numberOfPlayers);
+				game.setPlatformId(consoleId);
+				game.setEsrbRating(esrbRating);
+				
+				itemEntityManager.loadItem(game);		
+			}
+		}
+		
+		return game; 
+		
+	}
+	/**
 	 * Creates a new game record (and associated item) within database. 
 	 * Once created, the gameId will be updated to reflect the gameId within the database
 	 * 

@@ -34,7 +34,7 @@ public interface ItemEditor {
 	 * Causes the item editor to replace all fields
 	 * with details in the provided item.
 	 */
-	public void displayItem();
+	public void refreshFields();
 	
 	/**
 	 * Causes the item editor to update the item with

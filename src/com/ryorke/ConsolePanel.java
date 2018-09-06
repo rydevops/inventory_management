@@ -15,17 +15,15 @@ package com.ryorke;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dialog.ModalityType;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
@@ -43,12 +41,14 @@ import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 
+import com.ryorke.database.GameEntityManager;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
+
+
 
 /**
  * Console Inventory Panel - Provides a console specific editor 
@@ -63,12 +63,11 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	private JTextField color;
 	private JTextField diskSpace;
 	private JTextField modelNumber;
-	private JList<String> includedGameId;
+	private JList<Game> includedGamesList;
 	private JSpinner controllersIncluded;
 	private JButton addGame;
+	private JButton removeGame;
 	private JDialog parent; 
-	
-	private ArrayList<Game> includedGamesList;
 	
 	/**
 	 * Creates a console editor panel and loads the data
@@ -82,13 +81,14 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 			throw new NullPointerException("Console item cannot be null");
 		
 		this.parent = parent;
+		this.item = item;
 		
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
 		add(createControls(), BorderLayout.CENTER);
 		
-		this.item = item;
-		displayItem();
+		
+		refreshFields();
 	}
 	
 	/**
@@ -239,9 +239,26 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
 		addComponent(controls, layout, constraint, controllersIncluded);
 
-		includedGameId = new JList<String>(new DefaultListModel<String>());
-		JLabel includedGameIdLabel = createJLabel("Included games:", SwingConstants.RIGHT, KeyEvent.VK_A, includedGameId);
-		JScrollPane includedGameIdScrollView = new JScrollPane(includedGameId);
+		
+		DefaultListModel<Game> gameListModel = new DefaultListModel<Game>();
+		int[] gameList = item.getIncludedGameId();
+		if (gameList != null) {
+			try {
+				GameEntityManager manager = GameEntityManager.getManager();
+				for (int gameId : gameList) {
+					gameListModel.addElement(manager.getGame(gameId));
+				}
+			} catch (Exception exception) {
+				JOptionPane.showMessageDialog(parent, String.format("Unable to load included games list.\nReason:\n%s", 
+						exception.getMessage()), "Game list failed to load", 
+						JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+				this.dispatchEvent(new WindowEvent(parent, WindowEvent.WINDOW_CLOSING));
+			}
+			
+		}
+		includedGamesList = new JList<Game>(gameListModel);	
+		JLabel includedGameIdLabel = createJLabel("Included games:", SwingConstants.RIGHT, KeyEvent.VK_A, includedGamesList);
+		JScrollPane includedGameIdScrollView = new JScrollPane(includedGamesList);
 		constraint.gridwidth = 1;
 		constraint.weightx = 0;
 		addComponent(controls, layout, constraint, includedGameIdLabel);
@@ -259,27 +276,53 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		});
 		constraint.weighty = 0;	
 		addComponent(controls, layout, constraint, addGame);
+		removeGame = new JButton("Remove game");
+		removeGame.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				removeSelectedGame();				
+			}
+		});
+		addComponent(controls, layout, constraint, removeGame);
 
 		return controls;
 	}
 	
+	private void removeSelectedGame() {
+		DefaultListModel<Game> model = (DefaultListModel<Game>) includedGamesList.getModel();
+		int[] selectedGameIndices = includedGamesList.getSelectedIndices();
+		if (selectedGameIndices.length > 0)
+			for (int selectedGameIndex = selectedGameIndices.length -1; selectedGameIndex >= 0; selectedGameIndex--) {
+				model.removeElementAt(selectedGameIndices[selectedGameIndex]);
+			}
+		else
+			JOptionPane.showMessageDialog(parent, "Select a game to be delete.", 
+					"No game selected", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+		
+	}
+	
 	private void addIncludedGame() {
 		try {
-			GameSelectionDialog gameSelectionDialog = new GameSelectionDialog(parent, item.getItemNumber());
+			DefaultListModel<Game> model = (DefaultListModel<Game>) includedGamesList.getModel();
+			int[] existingGameIdsIncluded = null;
+			if (model.getSize() > 0) {
+				existingGameIdsIncluded = new int[model.getSize()];
+				for (int index = 0; index < model.getSize(); index++) {
+					existingGameIdsIncluded[index] = model.getElementAt(index).getItemNumber();
+				}
+			}
+			
+			GameSelectionDialog gameSelectionDialog = new GameSelectionDialog(parent, item.getItemNumber(), existingGameIdsIncluded);
 			if (gameSelectionDialog.getGameCount() > 0) {
 				gameSelectionDialog.setVisible(true);
 				if (gameSelectionDialog.wasSaved()) {
-					includedGamesList = gameSelectionDialog.getIncludedGames();
-					
-					if (includedGamesList != null) {
-						DefaultListModel<String> model = (DefaultListModel<String>)includedGameId.getModel();
-						model.clear();
-						for (Game game : includedGamesList ) {
-							int gameId = game.getItemNumber();
-							String gameName = game.getProductName();
-							model.addElement(String.format("%d - %s", gameId, gameName));					
+					ArrayList<Game> selectedGames = gameSelectionDialog.getIncludedGames(); 
+					model.clear();
+					if (selectedGames != null) {
+						for (Game game : selectedGames ) {
+							model.addElement(game);				
 						}
-					} 
+					}
 				}
 			} else {
 				JOptionPane.showMessageDialog(this, "No games found for this console", 
@@ -311,10 +354,10 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		}
 		this.item = (Console) item;	
 		
-		displayItem();
+		refreshFields();
 		
 	}
-
+	
 	/**
 	 * Refreshes the data fields with the item stored 
 	 * within this view. 
@@ -326,7 +369,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	 * 
 	 */
 	@Override
-	public void displayItem() {
+	public void refreshFields() {
 		color.setText(item.getColor());
 		controllersIncluded.setValue(item.getControllersIncluded());
 		diskSpace.setText(item.getDiskSpace());
@@ -359,9 +402,16 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 			item.setDiskSpace(diskSpace.getText());			
 			item.setModelNumber(modelNumber.getText());
 			
-			// TODO: STORE INCLUDE GAME ITEMS IN ARRAY
-			// TODO: (ELSEWHERE) Load the game included list when editing an item
-			item.setIncludedGameId(null);  // TODO: Implement way to gather this information
+			// Create a list of game ids to be included
+			ListModel<Game> model = includedGamesList.getModel();
+			int[] gameIds = null;
+			if (model.getSize() > 0) {
+				gameIds = new int[model.getSize()];
+				for (int index = 0; index < model.getSize(); index++) {
+					gameIds[index] = model.getElementAt(index).getItemNumber();
+				}
+			}
+			item.setIncludedGameId(gameIds);
 		}
 		
 		return updateSuccessful;
@@ -435,5 +485,4 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		
 		return isValid; 
 	}
-	
 }
