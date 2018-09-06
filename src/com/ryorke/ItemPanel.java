@@ -107,6 +107,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * @return A new panel 
 	 */
 	private JPanel createControls() {
+		// TODO: Sort out sizing issue
 		JPanel controls = new JPanel();
 		GridBagLayout layout = new GridBagLayout();
 		GridBagConstraints constraint = new GridBagConstraints();
@@ -128,10 +129,10 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		JLabel itemNumberLabel = createJLabel("Item Number:", SwingConstants.RIGHT, 0, itemNumber);
 		itemNumber.setEditable(false);
 		itemNumber.setFocusable(false);	// Remove from tab order
-		addComponent(controls, layout, constraint, itemNumberLabel);		
-		addComponent(controls, layout, constraint, itemNumber);
+		addComponent(controls, layout, constraint, itemNumberLabel);
+		constraint.weightx = 1;
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
-		addComponent(controls, layout, constraint, new JLabel()); // FILLER
+		addComponent(controls, layout, constraint, itemNumber);		
 		
 		productName = new JTextField();
 		productName.addFocusListener(this);
@@ -225,15 +226,18 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		JLabel widthLabel = createJLabel("Width", SwingConstants.LEFT, KeyEvent.VK_W, width);
 		JLabel depthLabel = createJLabel("Depth", SwingConstants.LEFT, KeyEvent.VK_P, depth);
 		JLabel weightLabel = createJLabel("Weight", SwingConstants.LEFT, KeyEvent.VK_G, weight);
+		constraint.weightx = 1;
+		constraint.weighty = 0;
+		constraint.gridwidth = GridBagConstraints.REMAINDER; 
 		addComponent(controls, layout, constraint, packageDimensionsLabel);
-		constraint.weightx = 0;
+		constraint.weightx = 1;
 		constraint.weighty = 0;
 		constraint.gridwidth = 1; 
 		addComponent(controls, layout, constraint, height);
 		addComponent(controls, layout, constraint, width);
 		addComponent(controls, layout, constraint, depth);
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
-		addComponent(controls, layout, constraint, weight);
+		addComponent(controls, layout, constraint, weight);		
 		constraint.gridwidth = 1; 
 		addComponent(controls, layout, constraint, heightLabel);
 		addComponent(controls, layout, constraint, widthLabel);
