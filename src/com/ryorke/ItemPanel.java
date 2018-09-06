@@ -703,8 +703,8 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 			item.setReleaseDate(parseDate(releaseDate.getText()));
 			item.getPackageDimensions().setWidth(parseFloat(width.getText()));
 			item.getPackageDimensions().setHeight(parseFloat(height.getText()));
-			item.getPackageDimensions().setHeight(parseFloat(depth.getText()));
-			item.getPackageDimensions().setHeight(parseFloat(weight.getText()));
+			item.getPackageDimensions().setDepth(parseFloat(depth.getText()));
+			item.getPackageDimensions().setWeight(parseFloat(weight.getText()));
 		}
 		
 		return updateSuccessful;
