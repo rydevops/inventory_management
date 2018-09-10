@@ -21,6 +21,8 @@ import java.awt.Insets;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.sql.SQLException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -33,6 +35,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
 
+import com.ryorke.database.ConsoleEntityManager;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
 
@@ -51,6 +54,7 @@ public class GamePanel extends JPanel implements ItemEditor {
 	private JComboBox<String> esrbRating; 
 	
 	private Game item;
+	private ConsoleEntityManager consoleManager;
 	
 	/**
 	 * Helper to quickly add components to the panel using the GridBagLayout manager
@@ -82,6 +86,8 @@ public class GamePanel extends JPanel implements ItemEditor {
 		label.setLabelFor(labelFor);
 		
 		return label;
+		
+		
 	}
 	
 	/**
@@ -190,8 +196,10 @@ public class GamePanel extends JPanel implements ItemEditor {
 	 * @param item A Game item to populate the fields with
 	 *             
 	 * @throws NullPointerException If item is set to null 
+	 * @throws SQLException If a database error occurs
+	 * @throws IOException If system is unable to access the databse file.  
 	 */
-	public GamePanel(Game item) throws NullPointerException {
+	public GamePanel(Game item) throws NullPointerException, IOException, SQLException {
 		if (item == null)
 			throw new NullPointerException("Game items cannot be null.");
 		
@@ -201,6 +209,8 @@ public class GamePanel extends JPanel implements ItemEditor {
 		
 		this.item = item;
 		refreshFields();
+		
+		consoleManager = ConsoleEntityManager.getManager();
 	}
 	
 	/**
@@ -281,14 +291,14 @@ public class GamePanel extends JPanel implements ItemEditor {
 	 * Checks the platformID to ensure it's a valid console ID (alias itemNumber)
 	 * If field is invalid, the field will be updated with a tooltip and highlighted. 
 	 * 
-	 * @return true if valid, false otherwise. 
+	 * @return true if valid, false otherwise.
+	 * 
 	 */
 	public boolean checkPlatformId() {
 		boolean isValid = true;
 		try {
 			Integer platformId = Integer.parseInt(this.platformId.getText());
-			if (platformId > 0) {
-				// TODO: Perform check that platformId exists				
+			if (platformId > 0 && consoleManager.isConsoleId(platformId)) {			
 				item.setPlatformId(platformId);
 				
 				// Clear the error (if set)
@@ -298,6 +308,8 @@ public class GamePanel extends JPanel implements ItemEditor {
 			}
 		} catch (NumberFormatException nfe) {
 			isValid = false;
+		} catch (SQLException sqlException) {
+			isValid = false;	// Always return false if a database error occurs
 		}
 		
 		if (!isValid) {

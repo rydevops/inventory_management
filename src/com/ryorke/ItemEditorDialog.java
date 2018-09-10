@@ -15,7 +15,6 @@ package com.ryorke;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -94,12 +93,19 @@ public class ItemEditorDialog extends JDialog {
 		genericItemPanel = new ItemPanel(item);		
 		editorPanel.add(genericItemPanel);
 		itemSpecificPanel = null;
-		if (item instanceof Game) {
-			itemSpecificPanel = new GamePanel((Game)item);			
-		} else if (item instanceof Accessory) {
-			itemSpecificPanel = new AccessoryPanel((Accessory)item);			
-		} else if (item instanceof Console) {
-			itemSpecificPanel = new ConsolePanel(this, (Console)item);			
+		try {
+			if (item instanceof Game) {
+				itemSpecificPanel = new GamePanel((Game)item);			
+			} else if (item instanceof Accessory) {
+				itemSpecificPanel = new AccessoryPanel((Accessory)item);			
+			} else if (item instanceof Console) {
+				itemSpecificPanel = new ConsolePanel(this, (Console)item);			
+			}
+		} catch (SQLException | IOException exception) {
+			JOptionPane.showMessageDialog(null, 
+					String.format("Failed to connect to the databse.\nReason:\n%s", exception.getMessage()), 
+					"Database error", 
+					JOptionPane.OK_OPTION|JOptionPane.ERROR_MESSAGE);
 		}
 		if (itemSpecificPanel != null) {
 			editorPanel.add(itemSpecificPanel);
@@ -138,7 +144,8 @@ public class ItemEditorDialog extends JDialog {
 		buttonPanel.add(cancel);
 		
 		contentPane.add(buttonPanel, BorderLayout.SOUTH);		
-		setMinimumSize(new Dimension(875, 360));
+//		setMinimumSize(new Dimension(875, 360));
+		pack();
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}

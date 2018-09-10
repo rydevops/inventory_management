@@ -21,6 +21,8 @@ import java.awt.Insets;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.sql.SQLException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -30,6 +32,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
 
+import com.ryorke.database.ConsoleEntityManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Item;
 
@@ -48,6 +51,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	private JTextField color;
 	private JTextField modelNumber;
 	private JTextField platformId;
+	private ConsoleEntityManager consoleManager; 
 	
 	/**
 	 * Creates a accessory editor panel and loads the data
@@ -55,8 +59,10 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	 * 
 	 * @param item The accessory item details
 	 * @throws NullPointerException If item is null
+	 * @throws SQLException If a database error occurs while loading the panel
+	 * @throws IOException If the system is unable to access to database file. 
 	 */
-	public AccessoryPanel(Accessory item) throws NullPointerException {
+	public AccessoryPanel(Accessory item) throws NullPointerException, IOException, SQLException {
 		if (item == null)
 			throw new NullPointerException("Accessory item cannot be null");
 		setLayout(new BorderLayout());		
@@ -65,6 +71,8 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		
 		this.item = item;
 		refreshFields();
+		
+		consoleManager = ConsoleEntityManager.getManager();
 	}
 	
 	/**
@@ -323,7 +331,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		boolean isValid = true;
 		try {
 			Integer platformId = Integer.parseInt(this.platformId.getText());
-			if (platformId > 0) {
+			if (platformId > 0 && consoleManager.isConsoleId(platformId)) {
 				// TODO: Perform check that platformId exists				
 				item.setPlatformId(platformId);
 				
@@ -334,10 +342,12 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 			}
 		} catch (NumberFormatException nfe) {
 			isValid = false;
+		} catch (SQLException sqlexception) {
+			isValid = false;			
 		}
 		
 		if (!isValid) {
-			setFieldStyle(this.platformId, "Platform ID must be a valid ID.", INVALID_INPUT);
+			setFieldStyle(this.platformId, "Platform ID must be a valid console item number.", INVALID_INPUT);
 		}
 		
 		return isValid;

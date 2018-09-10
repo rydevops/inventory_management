@@ -107,8 +107,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * @return A new panel 
 	 */
 	private JPanel createControls() {
-		// TODO: Sort out sizing issue
-		JPanel controls = new JPanel();
+		JPanel controls = new JPanel();		
 		GridBagLayout layout = new GridBagLayout();
 		GridBagConstraints constraint = new GridBagConstraints();
 		controls.setLayout(layout);
@@ -146,6 +145,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		
 		JScrollPane descriptionPane = new JScrollPane();
 		description = new JTextArea();
+		description.setRows(5); // Ensure minimum of 5 rows for editor
 		description.addFocusListener(this);
 		JLabel descriptionLabel = createJLabel("Description:", SwingConstants.RIGHT, KeyEvent.VK_D, descriptionPane);
 		descriptionPane.setViewportView(description);
@@ -158,6 +158,21 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		constraint.weighty = 1;
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
 		addComponent(controls, layout, constraint, descriptionPane);
+		
+		manufacture = new JComboBox<String>();
+		// FocusListener has to be on the inner JTextField otherwise the event won't 
+		// fire when changed. 
+		manufacture.getEditor().getEditorComponent().addFocusListener(this);
+		JLabel manufactureLabel = createJLabel("Manufacture:", SwingConstants.RIGHT, KeyEvent.VK_M, manufacture);
+		manufacture.setEditable(true);	// Allow users to enter new manufactures to be added automatically
+		manufacture.setSelectedIndex(-1);
+		constraint.weightx = 0;
+		constraint.weighty = 0;
+		constraint.gridwidth = 1; 
+		addComponent(controls, layout, constraint, manufactureLabel);
+		constraint.weightx = 1;
+		constraint.gridwidth = GridBagConstraints.REMAINDER;
+		addComponent(controls, layout, constraint, manufacture);
 		
 		unitsInStock = new JTextField();
 		unitsInStock.addFocusListener(this);
@@ -177,11 +192,6 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
 		addComponent(controls, layout, constraint, unitCost);
 		
-		manufacture = new JComboBox<String>();
-		// FocusListener has to be on the inner JTextField otherwise the event won't 
-		// fire when changed. 
-		manufacture.getEditor().getEditorComponent().addFocusListener(this);
-		JLabel manufactureLabel = createJLabel("Manufacture:", SwingConstants.RIGHT, KeyEvent.VK_M, manufacture);
 		releaseDate = new JTextField();
 		releaseDate.addFocusListener(this);
 		JLabel releaseDateLabel = createJLabel("Release date:", SwingConstants.RIGHT, KeyEvent.VK_R, releaseDate);
@@ -198,19 +208,16 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 					+ "\nReason:\n%s", exception.getMessage()), "Manufacture load error", 
 					JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
-		manufacture.setEditable(true);	// Allow users to enter new manufactures to be added automatically
-		manufacture.setSelectedIndex(-1);
-		constraint.weightx = 0;
+		constraint.gridwidth = 1;
+		constraint.gridheight = 1;
 		constraint.weighty = 0;
-		constraint.gridwidth = 1; 
-		addComponent(controls, layout, constraint, manufactureLabel);
-		constraint.weightx = 1;
-		addComponent(controls, layout, constraint, manufacture);
 		constraint.weightx = 0;
 		addComponent(controls, layout, constraint, releaseDateLabel);
-		constraint.weightx = 1;
-		constraint.gridwidth = GridBagConstraints.REMAINDER;
+		constraint.weightx = 1;		
 		addComponent(controls, layout, constraint, releaseDate);
+		constraint.weightx = 1; 
+		constraint.gridwidth = GridBagConstraints.REMAINDER;
+		addComponent(controls, layout, constraint, new JLabel("")); // FILLER
 
 		
 		height = new JTextField();
@@ -220,7 +227,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		depth = new JTextField();
 		depth.addFocusListener(this);
 		weight = new JTextField();
-		weight.addFocusListener(this);
+		weight.addFocusListener(this);				
 		JLabel packageDimensionsLabel = new JLabel("Package Dimensions:");
 		JLabel heightLabel = createJLabel("Height", SwingConstants.LEFT, KeyEvent.VK_H, height);
 		JLabel widthLabel = createJLabel("Width", SwingConstants.LEFT, KeyEvent.VK_W, width);
@@ -245,9 +252,10 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		constraint.gridwidth = GridBagConstraints.REMAINDER;
 		addComponent(controls, layout, constraint, weightLabel);
 		
+		
 		return controls;		
 	}
-	
+ 
 	/**
 	 * Creates a new Inventory Item editor with fields populated
 	 * based on the item
@@ -266,6 +274,7 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
+		
 		refreshFields();
 	}
 

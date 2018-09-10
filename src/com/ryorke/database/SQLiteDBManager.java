@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.sql.DriverManager;
 import java.sql.ResultSet; 
 
@@ -77,14 +78,16 @@ public class SQLiteDBManager {
 	 * @throws SQLException if unable to access the database
 	 */
 	public Connection getConnection() throws SQLException {
-		Connection databaseConnection = DriverManager.getConnection(connectionURL);
+		Properties connectionProperties = new Properties();
+		connectionProperties.setProperty("foreign_keys", "true"); // Enables foreign key support
+		Connection databaseConnection = DriverManager.getConnection(connectionURL, connectionProperties);
 		return databaseConnection;
 	}
 	
 	/**
 	 * Checks if a table exists within the schema
 	 * 
-	 * @param tableNamePattern A patttern to search for the table name (using SQL syntax)
+	 * @param tableNamePattern A pattern to search for the table name (using SQL syntax)
 	 * @return True if tableNamePattern is found, false otherwise
 	 * 
 	 * @throws SQLException if unable to access the database

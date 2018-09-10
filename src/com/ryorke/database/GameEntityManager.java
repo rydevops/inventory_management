@@ -78,7 +78,9 @@ public class GameEntityManager implements EntityManager {
 				+ "numberOfDiscs INTEGER NOT NULL, "
 				+ "numberOfPlayers INTEGER NOT NULL, "
 				+ "consoleId INTEGER NOT NULL, "
-				+ "esrbRating TEXT NOT NULL)";
+				+ "esrbRating TEXT NOT NULL,"
+				+ "FOREIGN KEY(gameId) REFERENCES item(itemId),"
+				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId))";
 		
 		if (!databaseManager.tableExists("game")) {
 			try (Connection dbConnection = databaseManager.getConnection();
@@ -265,12 +267,13 @@ public class GameEntityManager implements EntityManager {
 	public void deleteGame(Game game) throws SQLException {
 		final String deleteGameQuery = "DELETE FROM game WHERE gameId = ?";
 		
-		itemEntityManager.deleteItem(game);
-		
 		try (Connection dbConnection = databaseManager.getConnection();
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteGameQuery)) {
 			deleteStatement.setInt(1, game.getItemNumber());			
 			deleteStatement.executeUpdate();
+			
+			// Item portion to be deleted after the game due to foreign constraints
+			itemEntityManager.deleteItem(game);
 		}
 	}
 	

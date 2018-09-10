@@ -66,6 +66,28 @@ public class ConsoleEntityManager implements EntityManager {
 	}	
 	
 	/**
+	 * Validates a console ID exists
+	 * @param id The id of the console to validate
+	 * @return True if console exists in the database, false otherwise
+	 * @throws SQLException If a database error occurs. 
+	 */
+	public boolean isConsoleId(int id) throws SQLException { 
+		final String queryConsoleById = "SELECT consoleId as consoleCount FROM console WHERE consoleId = ?";
+		boolean isConsoleId = false; 
+		
+		try (Connection dbConnection = databaseManager.getConnection();
+				PreparedStatement statement = dbConnection.prepareStatement(queryConsoleById);) {
+			statement.setInt(1, id);
+			ResultSet results = statement.executeQuery();
+			if (results.next()) {
+				isConsoleId = true;
+			}
+		}
+		
+		return isConsoleId;
+	}
+	
+	/**
 	 * Idempotent method for creating a database table schema if it
 	 * doesn't already exists. 
 	 * 
@@ -78,8 +100,9 @@ public class ConsoleEntityManager implements EntityManager {
 				+ "color TEXT NOT NULL, "
 				+ "controllersIncluded INTEGER NOT NULL, "
 				+ "diskSpace TEXT NOT NULL, "
-				+ "includedGameIds TEXT, "  // comma-separated int with foreign key of games
-				+ "modelNumber TEXT NOT NULL)";
+				+ "includedGameIds TEXT, "  // comma-separated gameIds
+				+ "modelNumber TEXT NOT NULL,"
+				+ "FOREIGN KEY(consoleId) REFERENCES item(itemId))";
 		
 		if (!databaseManager.tableExists("console")) {
 			try (Connection dbConnection = databaseManager.getConnection();
@@ -222,13 +245,14 @@ public class ConsoleEntityManager implements EntityManager {
 	 */
 	public void deleteConsole(Console console) throws SQLException {
 		final String deleteConsoleQuery = "DELETE FROM console WHERE consoleId = ?";
-		
-		itemEntityManager.deleteItem(console);
-		
+			
 		try (Connection dbConnection = databaseManager.getConnection();
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteConsoleQuery)) {
 			deleteStatement.setInt(1, console.getItemNumber());			
 			deleteStatement.executeUpdate();
+			
+			// Console to be deleted after the console portion
+			itemEntityManager.deleteItem(console);
 		}
 	}
 	

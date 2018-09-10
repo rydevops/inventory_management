@@ -77,7 +77,9 @@ public class AccessoryEntityManager implements EntityManager {
 				+ "(accessoryId INTEGER UNIQUE NOT NULL, "	// accessoryId = itemId or foreign key
 				+ "color TEXT NOT NULL, "
 				+ "consoleId INTEGER NOT NULL, "	// An id to an existing console
-				+ "modelNumber TEXT NOT NULL)";
+				+ "modelNumber TEXT NOT NULL,"
+				+ "FOREIGN KEY(accessoryId) REFERENCES item(itemId),"
+				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId))";
 		
 		if (!databaseManager.tableExists("accessory")) {
 			try (Connection dbConnection = databaseManager.getConnection();
@@ -181,12 +183,15 @@ public class AccessoryEntityManager implements EntityManager {
 	public void deleteAccessory(Accessory accessory) throws SQLException {
 		final String deleteAccessoryQuery = "DELETE FROM accessory WHERE accessoryId = ?";
 		
-		itemEntityManager.deleteItem(accessory);
+		
 		
 		try (Connection dbConnection = databaseManager.getConnection();
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteAccessoryQuery)) {
 			deleteStatement.setInt(1, accessory.getItemNumber());			
 			deleteStatement.executeUpdate();
+			
+			// Must delete item after deleting the accessory due to foreign constraints
+			itemEntityManager.deleteItem(accessory);
 		}
 	}
 	
