@@ -26,7 +26,7 @@ public class Console extends Item {
 	private String diskSpace;
 	private String modelNumber;
 	private int[] includedGameId;
-	private int controlersIncluded;
+	private int controllersIncluded;
 	
 	/**
 	 * Creates a new game console. 
@@ -43,24 +43,25 @@ public class Console extends Item {
 	 * @param diskSpace Available disk space within the console
 	 * @param modelNumber Model number of the console
 	 * @param includedGameId List of included game IDs with the console
-	 * @param controlersIncluded Number of included game controllers with the console
+	 * @param controllersIncluded Number of included game controllers with the console
 	 */
 	public Console(int itemNumber, String productName, String productDescription, int unitsInStock, double unitCost,
 		String manufacture, Date releaseDate, PackageDimension packageDimension, 
-		String color, String diskSpace, String modelNumber, int[] includedGameId, int controlersIncluded) {
+		String color, String diskSpace, String modelNumber, int[] includedGameId, int controllersIncluded) {
 		super(itemNumber, productName, productDescription, unitsInStock, unitCost, manufacture, releaseDate, packageDimension);
-		this.color = color;
-		this.diskSpace = diskSpace;
-		this.modelNumber = modelNumber;
-		this.includedGameId = (includedGameId != null) ? includedGameId.clone() : null;
-		this.controlersIncluded = controlersIncluded;		
+		
+		setColor(color);
+		setDiskSpace(diskSpace);
+		setModelNumber(modelNumber);
+		setIncludedGameId(includedGameId);
+		setControllersIncluded(controllersIncluded);		
 	}
 
 	/**
 	 * Creates a new unitialized console object
 	 */
 	public Console() {
-		this(-1, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", "", null, 1);		
+		this(0, "", "", 0, 0, "", new Date(), new PackageDimension(), "", "", "", null, 1);		
 	}
 	
 	/**
@@ -115,32 +116,33 @@ public class Console extends Item {
 	 * Gets the consoles included game IDs
 	 * @return A list of game IDs
 	 */
-	public int[] getIncludedGameId() {
+	public int[] getIncludedGameId() {		
 		return includedGameId;
 	}
 
 	/**
-	 * sets the consoles included game IDs
-	 * @param includedGameId A ist of game IDs to include with the console
+	 * Sets the consoles included game IDs. The provided array is cloned and disconnected from the
+	 * provided array. 
+	 * @param includedGameId A list of game IDs to include with the console
 	 */
 	public void setIncludedGameId(int[] includedGameId) {
-		this.includedGameId = includedGameId;
+		this.includedGameId = (includedGameId != null) ? includedGameId.clone() : null;		
 	}
 
 	/**
 	 * Gets the number of controllers included with the console
-	 * @return number of controlers included
+	 * @return number of controllers included
 	 */
-	public int getControlersIncluded() {
-		return controlersIncluded;
+	public int getControllersIncluded() {
+		return controllersIncluded;
 	}
 
 	/**
 	 * sets the number of controllers included with the console
-	 * @param controlersIncluded Number of controlers included
+	 * @param controllersIncluded Number of controllers included
 	 */
-	public void setControlersIncluded(int controlersIncluded) {
-		this.controlersIncluded = controlersIncluded;
+	public void setControllersIncluded(int controllersIncluded) {
+		this.controllersIncluded = controllersIncluded;
 	}
 	
 	

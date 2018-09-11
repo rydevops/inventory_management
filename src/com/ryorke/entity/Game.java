@@ -15,6 +15,7 @@ package com.ryorke.entity;
 
 import java.util.Date;
 
+
 /**
  * Video game item details
  * 
@@ -31,7 +32,7 @@ public class Game extends Item {
 	 * 
 	 * @param itemNumber An item number
 	 * @param productName A name for the item
-	 * @param productDescription The descriptio not the item
+	 * @param productDescription The description not the item
 	 * @param unitsInStock The number of units in stock
 	 * @param unitCost The cost of individual units
 	 * @param manufacture The manufacture that produces the item
@@ -40,24 +41,24 @@ public class Game extends Item {
 	 * @param numberOfDiscs The number of discs in the package
 	 * @param numberOfPlayers The number of players that can play the game together
 	 * @param platformId The platform Id the game is for
-	 * @param esrbRating The ESRB rating of the game
+	 * @param esrbRating The ESRB rating of the game 
 	 */
 	public Game(int itemNumber, String productName, String productDescription, int unitsInStock, double unitCost,
 			String manufacture, Date releaseDate, PackageDimension packageDimension,
 			int numberOfDiscs, int numberOfPlayers, int platformId, String esrbRating) {
 		super(itemNumber, productName, productDescription, unitsInStock, unitCost, manufacture, releaseDate, packageDimension);
 		
-		this.numberOfDiscs = numberOfDiscs;
-		this.numberOfPlayers = numberOfPlayers;
-		this.platformId = platformId;
-		this.esrbRating = esrbRating;
+		setNumberOfDiscs(numberOfDiscs);
+		setNumberOfPlayers(numberOfPlayers);
+		setPlatformId(platformId);
+		setEsrbRating(esrbRating);
 	}
 		
 	/**
-	 * Creates a new unitialized game object
+	 * Creates a new game object with all values set to their default values
 	 */
 	public Game() {
-		this(-1, "", "", 0, 0, "", new Date(), new PackageDimension(), 1, 1, -1, "");		
+		this(0, "", "", 0, 0, "", new Date(), new PackageDimension(), 1, 1, 0, "");		
 	}
 	
 	/**
@@ -126,5 +127,14 @@ public class Game extends Item {
 		this.esrbRating = esrbRating;
 	}
 	
+	/**
+	 * Returns a simple string representation of this game including the
+	 * game ID and game name
+	 * 
+	 * @return A string representation of this game
+	 */
+	public String toString() {
+		return getItemNumber() + " - " + getProductName();
+	}
 	
 }

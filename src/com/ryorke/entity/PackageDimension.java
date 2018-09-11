@@ -13,6 +13,7 @@
  */
 package com.ryorke.entity;
 
+
 /**
  * Item's package dimensions
  * 
@@ -25,7 +26,7 @@ public class PackageDimension {
 	private float weight;
 	
 	/**
-	 * Create a 0-dimension package
+	 * Create a new instance with all values initialized to 0
 	 */
 	public PackageDimension() {
 		this(0, 0, 0, 0);
@@ -37,13 +38,13 @@ public class PackageDimension {
 	 * @param height Package height
 	 * @param width Package width
 	 * @param depth Package depth
-	 * @param weight Package weight
+	 * @param weight Package weight 
 	 */
 	public PackageDimension(float height, float width, float depth, float weight) {
-		this.height = height;
-		this.width = width;
-		this.depth = depth;
-		this.weight = weight;
+		setHeight(height);
+		setWidth(width);
+		setDepth(depth);
+		setWeight(weight);
 	}
 	
 	/**
@@ -90,7 +91,7 @@ public class PackageDimension {
 	 *  Gets the depth of the package
 	 * @param depth the depth to set
 	 */
-	public void setDepth(float depth) {
+	public void setDepth(float depth)  {
 		this.depth = depth;
 	}
 	

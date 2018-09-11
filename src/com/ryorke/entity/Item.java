@@ -35,7 +35,7 @@ public abstract class Item {
 	 * 
 	 * @param itemNumber An item number
 	 * @param productName A name for the item
-	 * @param productDescription The descriptio not the item
+	 * @param productDescription The description of the item
 	 * @param unitsInStock The number of units in stock
 	 * @param unitCost The cost of individual units
 	 * @param manufacture The manufacture that produces the item
@@ -44,14 +44,22 @@ public abstract class Item {
 	 */
 	public Item(int itemNumber, String productName, String productDescription, int unitsInStock, double unitCost,
 			String manufacture, Date releaseDate, PackageDimension packageDimension) {
+		setItemNumber(itemNumber);
+		setProductName(productName);
+		setProductDescription(productDescription);
+		setUnitsInStock(unitsInStock);
+		setUnitCost(unitCost);
+		setManufacture(manufacture);
+		setReleaseDate(releaseDate);
+		setPackageDimension(packageDimension);
+	}
+	
+	/**
+	 * Sets the item number
+	 * @param itemNumber
+	 */
+	public void setItemNumber(int itemNumber) {
 		this.itemNumber = itemNumber;
-		this.productName = productName;
-		this.productDescription = productDescription;
-		this.unitsInStock = unitsInStock;
-		this.unitCost = unitCost;
-		this.manufacture = manufacture;
-		this.releaseDate = releaseDate;
-		this.packageDimension = packageDimension;
 	}
 	
 	/**
@@ -90,7 +98,8 @@ public abstract class Item {
 	 * Sets the current units in stock
 	 * @param unitsInStock new units in stock
 	 */
-	public void setUnitsInStock(int unitsInStock) {
+	public void setUnitsInStock(int unitsInStock)  {
+		
 		this.unitsInStock = unitsInStock;
 	}
 

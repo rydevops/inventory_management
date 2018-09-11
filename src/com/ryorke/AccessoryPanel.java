@@ -18,16 +18,22 @@ import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.sql.SQLException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
 
+import com.ryorke.database.ConsoleEntityManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Item;
 
@@ -40,22 +46,34 @@ import com.ryorke.entity.Item;
  */
 @SuppressWarnings("serial")
 public class AccessoryPanel extends JPanel implements ItemEditor {
+	public final static Color INVALID_INPUT = new Color(255, 200, 200);
+	
 	private Accessory item;
 	private JTextField color;
 	private JTextField modelNumber;
 	private JTextField platformId;
+	private ConsoleEntityManager consoleManager; 
 	
-	public AccessoryPanel() {
-		this(null);
-	}
-	
-	public AccessoryPanel(Accessory item) {
+	/**
+	 * Creates a accessory editor panel and loads the data
+	 * into the fields based on the item. 
+	 * 
+	 * @param item The accessory item details
+	 * @throws NullPointerException If item is null
+	 * @throws SQLException If a database error occurs while loading the panel
+	 * @throws IOException If the system is unable to access to database file. 
+	 */
+	public AccessoryPanel(Accessory item) throws NullPointerException, IOException, SQLException {
+		if (item == null)
+			throw new NullPointerException("Accessory item cannot be null");
 		setLayout(new BorderLayout());		
 		setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));		
 		add(createControls(), BorderLayout.CENTER);
 		
 		this.item = item;
 		refreshFields();
+		
+		consoleManager = ConsoleEntityManager.getManager();
 	}
 	
 	/**
@@ -114,6 +132,24 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		constraint.fill = GridBagConstraints.BOTH;
 		
 		color = new JTextField();
+		color.addFocusListener(new FocusListener() {
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkColor();
+			}
+			
+			/**
+			 * Selects all text
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
+		});
 		JLabel colorLabel = createJLabel("Color:", SwingConstants.RIGHT, KeyEvent.VK_O, color);
 		addComponent(controls, layout, constraint, colorLabel);
 		constraint.weightx = 1;
@@ -121,6 +157,24 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, color);
 		
 		modelNumber = new JTextField();
+		modelNumber.addFocusListener(new FocusListener() {
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkModelNumber();
+			}
+			
+			/**
+			 * Selects all text
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
+		});
 		JLabel modelNumberLabel = createJLabel("Model number:", SwingConstants.RIGHT, KeyEvent.VK_E, modelNumber);
 		constraint.weightx = 0;
 		constraint.gridwidth = 1;
@@ -130,6 +184,24 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, modelNumber);
 		
 		platformId = new JTextField();
+		platformId.addFocusListener(new FocusListener() {
+			/**
+			 * Performs field validation
+			 * @param e event details
+			 */
+			@Override
+			public void focusLost(FocusEvent e) {
+				checkPlatformId();
+			}
+			
+			/**
+			 * Selects all text
+			 */
+			@Override
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
+		});
 		JLabel platformIdLabel = createJLabel("Platform ID:", SwingConstants.RIGHT, KeyEvent.VK_F, platformId);
 		constraint.weightx = 0;
 		constraint.gridwidth = 1;
@@ -147,21 +219,39 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	}
 	
 	/**
+	 * If field is a textbox/textarea type fields
+	 * it will automatically select everything in the field. 
+	 * 
+	 * @param sourceElement A source element to apply the selectAll to
+	 */
+	private void selectAllData(Object sourceElement) {
+		if (sourceElement instanceof JTextField) {
+			JTextField textbox = (JTextField) sourceElement;
+			textbox.selectAll();
+		} else if (sourceElement instanceof JTextArea) {
+			JTextArea textarea = (JTextArea) sourceElement;
+			textarea.selectAll();			
+		}
+	}
+	
+	/**
 	 * Updates the item reference within this view. 
 	 * 
 	 * @param item A new accessory item to replace the existing item
 	 * 
-	 * @throws NullPointerException when item is null, item must be set to a valid object
+	 * @throws NullPointerException when item is null
+	 * @throws ClassCastException when item is not a accessory type
 	 */
 	@Override
-	public void updateItem(Item item) {
+	public void setItem(Item item) {
 		if (item == null) {
-			throw new NullPointerException("Item references cannot be null");
+			throw new NullPointerException("Accessory item cannot be null");
 		}
 		
 		if (!(item instanceof Accessory)) {
 			throw new ClassCastException("Unable to cast Item to Accessory Item");
 		}
+		
 		this.item = (Accessory) item;		
 		refreshFields();
 		
@@ -175,15 +265,128 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	 *          without any prompts. As such make sure you have saved
 	 *          your item details to the internal item before calling
 	 *          this method. 
-	 * 
 	 */
 	@Override
 	public void refreshFields() {
-		if (item != null) {
-			color.setText(item.getColor());
-			modelNumber.setText(item.getModelNumber());
-			platformId.setText(Integer.toString(item.getPlatformId()));
-		}
+		color.setText(item.getColor());
+		modelNumber.setText(item.getModelNumber());
+		platformId.setText(Integer.toString(item.getPlatformId()));
 	}
+
+	/**
+	 * Performs validation on all fields
+	 * @return
+	 */
+	public boolean checkAllFields() {
+		return checkColor() & checkModelNumber() & checkPlatformId();
+	}
+	
+	/**
+	 * Checks all fields for valid data and updates the item if no fields
+	 * contain errors. 
+	 * 
+	 * @return true if item was updated false otherwise. 
+	 */
+	@Override
+	public boolean updateItem() {
+		boolean updateSuccessful = false; 
+		
+		updateSuccessful = checkColor() && checkModelNumber() && checkPlatformId();
+		
+		if (updateSuccessful) {
+			item.setColor(color.getText());			
+			item.setModelNumber(modelNumber.getText());
+			try {
+				item.setPlatformId(Integer.parseInt(platformId.getText()));
+			} catch (NumberFormatException nfe) {
+				// Do nothing, should not be possible to reach this
+				assert(false): "Failed to convert platformId in updateItem";
+			}
+		}
+		
+		return updateSuccessful;
+	}
+	
+	/**
+	 * Validates the model number has been provided. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkModelNumber() {
+		boolean isValid = false;
+		
+		String modelNumber = this.modelNumber.getText();		
+		if (modelNumber.length() == 0) {
+			setFieldStyle(this.modelNumber, "A model number must be provided", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.modelNumber, null, Color.WHITE);
+			isValid = true;
+		}
+		
+		return isValid; 
+	}
+	
+	/**
+	 * Validates the color has been provided. 
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkColor() {
+		boolean isValid = false;
+		
+		String color = this.color.getText();		
+		if (color.length() == 0) {
+			setFieldStyle(this.color, "A color must be provided", INVALID_INPUT);
+		} else {
+			setFieldStyle(this.color, null, Color.WHITE);
+			isValid = true;
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Checks the platformID to ensure it's a valid console ID (alias itemNumber)
+	 * 
+	 * @return true if valid, false otherwise. 
+	 */
+	public boolean checkPlatformId() {
+		boolean isValid = true;
+		try {
+			Integer platformId = Integer.parseInt(this.platformId.getText());
+			if (platformId > 0 && consoleManager.isConsoleId(platformId)) {
+				// TODO: Perform check that platformId exists				
+				item.setPlatformId(platformId);
+				
+				// Clear the error (if set)
+				setFieldStyle(this.platformId, null, Color.WHITE);
+			} else {
+				isValid = false;
+			}
+		} catch (NumberFormatException nfe) {
+			isValid = false;
+		} catch (SQLException sqlexception) {
+			isValid = false;			
+		}
+		
+		if (!isValid) {
+			setFieldStyle(this.platformId, "Platform ID must be a valid console item number.", INVALID_INPUT);
+		}
+		
+		return isValid;
+	}
+	
+	/**
+	 * Configures the component to display a tooltip and change the background color
+	 * 
+	 * @param component A component to modify
+	 * @param tooltip The tooltip to set (set to null to disable tooltips)
+	 * @param bgColor A color to change the background to
+	 */
+	private void setFieldStyle(JComponent component, String tooltip, Color bgColor) {
+		component.setBackground(bgColor);
+		component.setToolTipText(tooltip);
+	}
+	
 
 }

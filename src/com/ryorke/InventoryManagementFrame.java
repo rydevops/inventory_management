@@ -20,12 +20,16 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.text.DecimalFormat;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
+import java.util.Date;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -36,12 +40,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
 
+import com.ryorke.database.AccessoryEntityManager;
+import com.ryorke.database.ConsoleEntityManager;
+import com.ryorke.database.GameEntityManager;
 import com.ryorke.entity.Accessory;
 import com.ryorke.entity.Console;
 import com.ryorke.entity.Game;
 import com.ryorke.entity.Item;
-import com.ryorke.entity.PackageDimension;
+import com.ryorke.entity.User;
+import com.ryorke.entity.exception.InvalidUserAttributeException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -59,12 +68,10 @@ import javax.swing.JLabel;
 @SuppressWarnings("serial")
 public class InventoryManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "Inventory Manager";
-	
+	private User authenticatedUser = null;
 	private boolean promptOnClose = true; 
-	
-	/**
-	 * Controls
-	 */
+	private InventoryTableModel inventoryTableModel = null; 
+
 	private JTextField filterInventoryQuery;
 	private JButton filter;
 	private JButton addInventoryItem;
@@ -73,26 +80,23 @@ public class InventoryManagementFrame extends JFrame {
 	private JTable inventoryTable; 
 	
 	/**
-	 * Inventory data
-	 * TODO:
-	 * 		Connect data models into database
-	 */
-	ArrayList<Item> inventory = new ArrayList<Item>();
-	
-	/**
 	 * Creates a new inventory management window with a default
 	 * title
+	 * @param authenticatedUser A reference to the user that logged into the system
 	 */
-	public InventoryManagementFrame() {
-		this(InventoryManagementFrame.WINDOW_TITLE);
+	public InventoryManagementFrame(User authenticatedUser) {
+		this(InventoryManagementFrame.WINDOW_TITLE, authenticatedUser);
 	}
 	
 	/**
 	 * Creates a new inventory management window with the specified
 	 * title
 	 * @param title Window title
+	 * @param authenticatedUser A reference to the user that logged into the system
 	 */
-	public InventoryManagementFrame(String title) {
+	public InventoryManagementFrame(String title, User authenticatedUser) {
+		this.authenticatedUser = authenticatedUser;
+		
 		Container contentPane = getContentPane();
 		contentPane.setLayout(new BorderLayout());
 		
@@ -110,7 +114,7 @@ public class InventoryManagementFrame extends JFrame {
 	    
 		setSize(new Dimension(800, 600));
 		setLocationRelativeTo(null);
-		setTitle(title);
+		setTitle(String.format("%s (Logged in as %s)", title, authenticatedUser.getUsername()));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setVisible(true);		
 		
@@ -132,7 +136,7 @@ public class InventoryManagementFrame extends JFrame {
 				if (promptOnClose) {
 					String[] options = {"Logout", "Exit", "Cancel"};
 					int response = JOptionPane.showOptionDialog(InventoryManagementFrame.this, 
-							"Select an action:", "Closing", JOptionPane.YES_NO_CANCEL_OPTION, 
+							"Select an action:", "Application exiting", JOptionPane.YES_NO_CANCEL_OPTION, 
 							JOptionPane.QUESTION_MESSAGE, null, options, options[CANCEL_ACTION]);
 					
 					if (response == LOGOUT_ACTION) {
@@ -200,92 +204,129 @@ public class InventoryManagementFrame extends JFrame {
 	}
 	
 	/**
-	 * Prompts user for item type and creates new item based
-	 * on selection
-	 * 
-	 * @return A new item unless user cancelled.
+	 * Displays new item dialog. If user saves the item the inventory table
+	 * will be updated with the new item. 
 	 */
-	private Item createNewItem() {		
-		String[] availableTypes = { "Video Game", "Accessory", "Console" };
+	private void showNewItemDialog() {
+		Item newItem = selectItemType();
+		
+		if (newItem != null) {
+			ItemEditorDialog editor = new ItemEditorDialog(this, newItem);
+			editor.setVisible(true);
+			
+			if (editor.wasSaved()) {
+				inventoryTableModel.addRow(newItem);
+			}
+		}
+	}
+	
+	/**
+	 * Shows the edit item dialog based on the selected item. 
+	 */
+	private void showEditItemDialog() {
+		int selectedRow = inventoryTable.getSelectedRow();	
+		if (selectedRow > -1) {
+			ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
+			editor.setVisible(true);
+			
+			if (editor.wasSaved()) {
+				inventoryTableModel.fireTableRowsUpdated(selectedRow, selectedRow);
+			}
+		} else {
+			JOptionPane.showMessageDialog(this, "No item selected to be edited. Select an item and try again.", 
+					"No item selected", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	/**
+	 * Promotes user for an item type to be created and generates a new default item of that type. 
+	 * 
+	 * @return A empty item or null if cancelled
+	 */
+	private Item selectItemType() {		
+		String[] availableTypes = { "Accessory", "Console", "Video Game" };
 		String message = "What type of item?";
-		String title = "Item Selection";		
+		String title = "Create new item";		
 		
 		String response = (String) JOptionPane.showInputDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE, null, availableTypes, availableTypes[0]);
 		
 		Item item = null;
 		if (response == availableTypes[0]) {
-			item = new Game();
+			item = new Accessory();			
 		} else if (response == availableTypes[1]) {
-			item = new Accessory();
-		} else if (response == availableTypes[2]) {
 			item = new Console();
+		} else if (response == availableTypes[2]) {			
+			item = new Game();
 		}
-		
 		return item;
 	}
 	
 	/**
-	 * Creates a scrollable inventory table
+	 * Creates a scrollable inventory table. If an error occurs while attempting
+	 * to load the inventory into the table, the application will display an error 
+	 * and exit. 
 	 * 
 	 * @return Configured inventory table
 	 */
 	private JScrollPane createInventoryTable() {
-		// TODO: Remove sample data
-		// ============= SAMPLE DATA TO BE REMOVED ====================
-		inventory.add(new Game(1, "God of War", "A brand new game with remastered content",
-				250, 79.99, "Santa Monica Studios", new GregorianCalendar(2018, 12, 31).getTime(), new PackageDimension(4, 5, 6, 1), 
-				4, 1, 1, "M - Mature 17+"));
-		inventory.add(new Accessory(2, "Wireless Beats", "Simply wireless headphones", 200, 49.95, "Apple", new GregorianCalendar(2019, 07, 15).getTime(), 
-				new PackageDimension(3, 4, 6, 5.7F),  "White", "MF-A1234", 1));
-		inventory.add(new Console(3, "Playstation 4", "Next generation console", 100, 499.99, "Sony", new GregorianCalendar(2013, 12, 15).getTime(), 
-				new PackageDimension(6, 17, 15, 25),  "Black", "1TB", "SPCH-1000", null, 2));
+		try {
+			inventoryTableModel = new InventoryTableModel();
+		} catch (SQLException | IOException | ParseException exception) {
+			String errorMessage = String.format("An error occured while attempting to load "
+					+ "the inventory from the database.\nThe application will now close.\nContact your system "
+					+ "administrator if the problem persists.\nReason:\n%s", exception.getMessage());
+			String errorTitle = "Unable to load inventory";
+			int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			JOptionPane.showMessageDialog(this, errorMessage, errorTitle, windowOptions);
+			exception.printStackTrace();
+			System.exit(1);
+		}
+		
+		inventoryTable = new JTable(inventoryTableModel);
+		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);	
+		inventoryTable.addMouseListener(new MouseListener() {
 
-		String [] header = {"Item Number",
-				"Product Name",
-				"Product Description", 
-				"Item Type",
-				"Units in Stock", 
-				"Unit Cost", 
-				"Manufacture",
-				"Release Date"};
-		
-		Object[][] tableData = new Object[inventory.size()][header.length];
-		
-		for (int inventoryItem = 0; inventoryItem < inventory.size(); inventoryItem++) {
-			Item item = inventory.get(inventoryItem);
-			String itemType = "";
-			if (item instanceof Game) {
-				itemType = "Video Game";
-			} else if (item instanceof Accessory) {
-				itemType = "Accessory";
-			} else if (item instanceof Console) {
-				itemType = "Console";
+			/**
+			 * Begins editing an item when double clicked
+			 */
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && !e.isConsumed()) {
+					showEditItemDialog();
+				}				
 			}
 			
-			SimpleDateFormat dateFormatter = (SimpleDateFormat) SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT);
-			dateFormatter.applyPattern("YYYY/MM/dd");		
-			DecimalFormat currencyFormat = new DecimalFormat("#,###0.00");
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseReleased(MouseEvent e) {}
 			
-			int headerCounter = 0;
-			tableData[inventoryItem][headerCounter++] = item.getItemNumber();
-			tableData[inventoryItem][headerCounter++] = item.getProductName();			
-			tableData[inventoryItem][headerCounter++] = item.getProductDescription();			
-			tableData[inventoryItem][headerCounter++] = itemType;
-			tableData[inventoryItem][headerCounter++] = item.getUnitsInStock();
-			tableData[inventoryItem][headerCounter++] = currencyFormat.format(item.getUnitCost());
-			tableData[inventoryItem][headerCounter++] = item.getManufacture();
-			tableData[inventoryItem][headerCounter++] = dateFormatter.format(item.getReleaseDate());
-	
-		}
-		// ============= END OF SAMPLE DATA ===========================
-	
-		JScrollPane tableScroller = new JScrollPane();		
-		inventoryTable = new JTable(tableData, header);
-		tableScroller.setViewportView(inventoryTable);
-		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		inventoryTable.setRowSelectionInterval(0, 0);
-		inventoryTable.setCellSelectionEnabled(false);
-		inventoryTable.setRowSelectionAllowed(true);
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mousePressed(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mousePressed(MouseEvent e) {}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseExited(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseEntered(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+			
+		});
+		
+		JScrollPane tableScroller = new JScrollPane(inventoryTable);
 		
 		return tableScroller;
 	}
@@ -338,6 +379,7 @@ public class InventoryManagementFrame extends JFrame {
 		edit.setMnemonic(KeyEvent.VK_E);
 		editManageDB.setMnemonic(KeyEvent.VK_D);
 		editManageDB.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+		editManageDB.setEnabled(authenticatedUser.isAdministrator());
 		editManageDB.addActionListener(new ActionListener() {
 			/** 
 			 * Display database management window
@@ -352,6 +394,7 @@ public class InventoryManagementFrame extends JFrame {
 		});
 		editManageUsers.setMnemonic(KeyEvent.VK_U);
 		editManageUsers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0));
+		editManageUsers.setEnabled(authenticatedUser.isAdministrator());
 		editManageUsers.addActionListener(new ActionListener() {
 			/** 
 			 * Display user management window
@@ -360,7 +403,22 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new UserManagementFrame();
+				try {
+					UserManagementDialog userManagement = new UserManagementDialog(InventoryManagementFrame.this);
+					userManagement.setVisible(true);
+				}   catch (SQLException | IOException exception) {
+					String errorMessage = String.format("Unable to retrieve users from the database.\n\nReason:\n%s", exception.getMessage());
+					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
+				} catch (InvalidUserAttributeException invalidUserAttributeException) {
+					// This catch should only occur if database modifications are performed outside of this
+					// application. 
+					String errorMessage = String.format("User databse table corrupted. Unable to retrieve users. Contact system administrator for further assistance.\n\n"
+							+ "Response:\n%s", invalidUserAttributeException.getMessage());
+					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
+					invalidUserAttributeException.printStackTrace();
+				}
 			}
 		});
 		edit.add(editManageDB);
@@ -432,18 +490,7 @@ public class InventoryManagementFrame extends JFrame {
 		JPanel buttonPanel = new JPanel(layoutManager);
 		
 		addInventoryItem = new JButton("Add Item");
-		editInventoryItem = new JButton("Edit Item");
-		deleteInventoryItem = new JButton("Delete Item");
-		
 		addInventoryItem.setMnemonic(KeyEvent.VK_A);
-		editInventoryItem.setMnemonic(KeyEvent.VK_D);
-		deleteInventoryItem.setMnemonic(KeyEvent.VK_L);
-		
-		buttonPanel.add(addInventoryItem);
-		buttonPanel.add(editInventoryItem);
-		buttonPanel.add(deleteInventoryItem);
-		
-		
 		addInventoryItem.addActionListener(new ActionListener() {
 			
 			/**
@@ -454,12 +501,13 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Item item = createNewItem();
-				if (item != null) {
-					new InventoryEditorFrame(item);
-				}				
+				showNewItemDialog();				
 			}
 		});
+		buttonPanel.add(addInventoryItem);
+		
+		editInventoryItem = new JButton("Edit Item");
+		editInventoryItem.setMnemonic(KeyEvent.VK_D);
 		editInventoryItem.addActionListener(new ActionListener() {
 			
 			/**
@@ -469,24 +517,108 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int selectedRow = inventoryTable.getSelectedRow();								
-				new InventoryEditorFrame(inventory.get(selectedRow));				
+				showEditItemDialog();				
 			}
 		});
+		buttonPanel.add(editInventoryItem);
 		
-		deleteInventoryItem.addActionListener(new ActionListener() {
-			/**
-			 * Deletes the selected item
-			 * 
-			 * @param e action event details
-			 */
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Delete Item action not yet implemented", "Deleting Item", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-			}
-		});
+		if (authenticatedUser.isAdministrator()) {
+			deleteInventoryItem = new JButton("Delete Item");		
+			deleteInventoryItem.setMnemonic(KeyEvent.VK_L);
+			deleteInventoryItem.addActionListener(new ActionListener() {
+				/**
+				 * Deletes the selected item
+				 * 
+				 * @param e action event details
+				 */
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					deleteSelectedItem();
+				}
+			});
+			buttonPanel.add(deleteInventoryItem);
+		}
 		
 		return buttonPanel;
+	}
+	
+	/**
+	 * Deletes the selected item from the table and database
+	 */
+	public void deleteSelectedItem() {
+		int selectedItemIndex = inventoryTable.getSelectedRow();
+		String message;
+		String title;
+		int options;
+		
+		if (selectedItemIndex >= 0) {
+			message = "About to delete selected item. Are you sure?";
+			title = "Delete item?";
+			options = JOptionPane.YES_NO_OPTION;
+			
+			int response = JOptionPane.showConfirmDialog(this, message, title, options);
+			
+			if (response == JOptionPane.YES_OPTION) {
+				try {
+					Item selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+					boolean performDelete = true;
+					
+					if (selectedItem instanceof Game && gameIncludedWithConsole((Game)selectedItem)) {
+						performDelete = false;
+						JOptionPane.showMessageDialog(this, 
+								"Unable to delete selected game. This game is included with a console and must be excluded before continuing.", 
+								"Deletion aborted", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+					}
+					
+					if (performDelete) {
+						inventoryTableModel.deleteRow(selectedItemIndex);
+					}
+				} catch (SQLException | IOException | ParseException exception) {
+					String errorMessage = String.format("Unable to delete selected item. Ensure that no items refer to this item before attempting to delete it.\n\nReason:\n%s", exception.getMessage());
+					JOptionPane.showMessageDialog(this, errorMessage, "Item deletion failed", 
+							JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		} else {
+			message = "An item must be selected before performing a delete operation.";
+			title = "Delete failed";
+			options = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+			JOptionPane.showMessageDialog(this, message, title, options);			
+		}
+		
+	}
+	
+	
+	/**
+	 * Performs check to determine if the Game is a game included with a console
+	 * 
+	 * @param game An existing game object
+	 * @return True if game is included as part of a console, false otherwise
+	 * @throws SQLException If a database error occurs
+	 * @throws IOException If database cannot access the database file
+	 * @throws ParseException If an error occurs in parsing data from the database
+	 */
+	private boolean gameIncludedWithConsole(Game game) throws SQLException, IOException, ParseException {
+		boolean gameReferencedByConsole = false;
+
+		ConsoleEntityManager consoleManager = ConsoleEntityManager.getManager();
+		ArrayList<Console> consoles = consoleManager.getConsoles();
+		for (Console console : consoles) {
+			if (console.getIncludedGameId() != null) {
+				for (int includedGameId : console.getIncludedGameId()) {
+					if (includedGameId == game.getItemNumber()) {
+						gameReferencedByConsole = true;
+						break;
+					}
+				}
+			}
+				
+			if (gameReferencedByConsole)
+				break;
+		}
+		
+		return gameReferencedByConsole; 
 	}
 	
 	/**
@@ -507,5 +639,190 @@ public class InventoryManagementFrame extends JFrame {
 		
 		promptOnClose = false;
 		dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+	}
+	
+	/**
+	 * Manages the inventory dispalyed in a JTable including pulling in the data
+	 * from a database, added to a database, and deletes items. 
+	 * 
+	 * @author Russell Yorke
+	 *
+	 */
+	class InventoryTableModel extends AbstractTableModel {
+		/**
+		 * Field identifiers for columns within the table
+		 */
+		private final static int ITEM_ID = 0;
+		private final static int ITEM_NAME = 1;
+		private final static int ITEM_DESCRIPTION = 2;
+		private final static int ITEM_TYPE = 3;
+		private final static int ITEM_UNITS_IN_STOCK = 4;
+		private final static int ITEM_UNIT_COST = 5;
+		private final static int ITEM_MANUFACTURE = 6;
+		private final static int ITEM_RELEASSE_DATE = 7;
+		
+		private String[] header = { "Item Number", "Name", "Description", "Type", "Units in Stock", "Unit Cost", "Manufacture", "Release Date" };
+		private ArrayList<Item> inventoriedItems = new ArrayList<Item>();
+		
+		private ConsoleEntityManager consoleManager;
+		private AccessoryEntityManager accessoryManager;
+		private GameEntityManager gameManager;
+		
+		/**
+		 * Populates the table inventory from the database
+		 * 
+		 * @throws IOException If database file cannot be accessed
+		 * @throws SQLException If a database error occurred
+		 * @throws ParseException If the database contains an invalid date format item
+		 */
+		public InventoryTableModel() throws IOException, SQLException, ParseException {
+			consoleManager = ConsoleEntityManager.getManager();
+			accessoryManager = AccessoryEntityManager.getManager();
+			gameManager = GameEntityManager.getManager();
+			
+			ArrayList<Console> consoles = consoleManager.getConsoles();
+			if (consoles != null)
+				inventoriedItems.addAll(consoles);
+			
+			ArrayList<Accessory> accessories = accessoryManager.getAccessories();
+			if (accessories != null)
+				inventoriedItems.addAll(accessories);
+			
+			ArrayList<Game> games = gameManager.getGames();
+			if (games != null)
+				inventoriedItems.addAll(games);
+		}
+		
+		/**
+		 * Inserts a new record and updates the table
+		 * 
+		 * @param item New item to insert
+		 */
+		public void addRow(Item item) {
+			inventoriedItems.add(item);
+			int rowInsertedAt = inventoriedItems.size() - 1;
+			fireTableRowsInserted(rowInsertedAt, rowInsertedAt);
+		}
+		
+		/**
+		 * Deletes an item from the inventory model and database
+		 * 
+		 * @param rowIndex The row to delete
+		 * @throws IndexOutOfBoundsException If rowIndex is invalid
+		 * @throws SQLException If a database error occurs.
+		 */
+		public void deleteRow(int rowIndex) throws IndexOutOfBoundsException, SQLException {
+			Item selectedItem = inventoriedItems.get(rowIndex);
+						
+			if (selectedItem instanceof Accessory) {
+				accessoryManager.deleteAccessory((Accessory)selectedItem);				
+			} else if (selectedItem instanceof Console) {
+				consoleManager.deleteConsole((Console)selectedItem);
+			} else if (selectedItem instanceof Game) {
+				gameManager.deleteGame((Game)selectedItem);
+			}
+			
+			inventoriedItems.remove(selectedItem);
+			fireTableRowsDeleted(rowIndex, rowIndex);			
+		}
+		
+		
+		/**
+		 * Gets the Item object at the requested row
+		 * @param rowIndex The item index to retrieve
+		 * @return an item
+		 * @throws IndexOutOfBoundsException if rowIndex is invalid
+		 */
+		public Item getRow(int rowIndex) throws IndexOutOfBoundsException {
+			Item selectedItem = inventoriedItems.get(rowIndex);
+			return selectedItem;
+		}
+		
+		/**
+		 * Counts the number of columns available
+		 * @return Column count
+		 */
+		@Override
+		public int getColumnCount() {
+			return header.length;
+		}
+
+		/**
+		 * Counts the total number of rows of data within the inventory
+		 * 
+		 * @return Total number of inventory rows
+		 */
+		@Override
+		public int getRowCount() {
+			return inventoriedItems.size();
+		}
+
+		/**
+		 * Retrieve a cells values
+		 * @param rowIndex The specific row to get data from
+		 * @param columnIndex the specific column to get data from
+		 * @return An cells value
+		 */
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			Item item = null; 
+			Object value = null; 
+			
+			if (inventoriedItems.size() > rowIndex) {
+				item = inventoriedItems.get(rowIndex);
+				
+				switch (columnIndex) {
+				case ITEM_ID:
+					value = item.getItemNumber();
+					break;
+				case ITEM_NAME:
+					value = item.getProductName();
+					break;
+				case ITEM_DESCRIPTION:
+					value = item.getProductDescription();
+					break;
+				case ITEM_TYPE:					
+					if (item instanceof Accessory)
+						value = "Accessory";
+					else if (item instanceof Console)
+						value = "Console";
+					else if (item instanceof Game)
+						value = "Game";
+					else
+						// Shouldn't be possible to reach this unless a new type has been created and not
+						// accounted for within this model
+						assert(item instanceof Accessory || item instanceof Console || item instanceof Game): "Unknown or unexpected item type found in ItemTableModel";
+					
+					break;
+				case ITEM_UNITS_IN_STOCK:
+					value = item.getUnitsInStock();
+					break;
+				case ITEM_UNIT_COST:
+					value = item.getUnitCost();
+					break;
+				case ITEM_MANUFACTURE:
+					value = item.getManufacture();
+					break;
+				case ITEM_RELEASSE_DATE:
+					SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+					Date releaseDate = item.getReleaseDate();
+					value = formatter.format(releaseDate);
+					break;
+				}
+			}
+			
+			return value;
+		}
+		
+		/**
+		 * Provides the name of a column
+		 * @param columnIndex The column index to get the column name from
+		 * @return A column name
+		 */
+		@Override
+		public String getColumnName(int columnIndex) {			
+			return header[columnIndex];
+		}
+		
 	}
 }

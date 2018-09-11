@@ -53,7 +53,7 @@ import javax.swing.JFrame;
 @SuppressWarnings("serial")
 public class InventoryDBManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "Database Management";
-	private static File lastDirectoryBrowed = null;
+	private static File lastDirectoryBrowsed = null;
 	
 	private JTextField fileLocation; 
 	private JProgressBar progressBar;
@@ -64,11 +64,6 @@ public class InventoryDBManagementFrame extends JFrame {
 	private JButton executeAction;
 	private JButton close;
 	
-	/**
-	 * TODO LIST: 
-	 * 1. the executeAction button doesn't update when the radio buttons are selected
-	 *    and this needs to be fixed
-	 */
 	/**
 	 * Creates a new inventory management window with a default
 	 * title and no owner
@@ -105,6 +100,10 @@ public class InventoryDBManagementFrame extends JFrame {
 		setVisible(true);		
 	}
 	
+	/**
+	 * Creates the progress bar for import/export operations
+	 * @return A new panel containing the progress bar
+	 */
 	private JPanel createProgressBar() {
 		BorderLayout layoutManager = new BorderLayout(); 
 		JPanel panel = new JPanel(layoutManager);
@@ -118,6 +117,11 @@ public class InventoryDBManagementFrame extends JFrame {
 		return panel;		
 	}
 	
+	/**
+	 * Creates the action buttons
+	 * 
+	 * @return A new panel containing action buttons
+	 */
 	private JPanel createButtons() {
 		BorderLayout layoutManager = new BorderLayout();
 		layoutManager.setHgap(5);
@@ -168,7 +172,11 @@ public class InventoryDBManagementFrame extends JFrame {
 			 */
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				overwriteDatabase.setEnabled(importDatabase.isSelected());				
+				overwriteDatabase.setEnabled(importDatabase.isSelected());
+				if (importDatabase.isSelected())
+					executeAction.setText("Import");
+				else
+					executeAction.setText("Export");
 			}
 		});
 		
@@ -315,9 +323,9 @@ public class InventoryDBManagementFrame extends JFrame {
 				fileSelector.addChoosableFileFilter(sqlFilter);
 				fileSelector.setFileFilter(sqlFilter);
 				fileSelector.setMultiSelectionEnabled(false);
-				fileSelector.setCurrentDirectory( (lastDirectoryBrowed != null) ? lastDirectoryBrowed : defaultLocation );
+				fileSelector.setCurrentDirectory( (lastDirectoryBrowsed != null) ? lastDirectoryBrowsed : defaultLocation );
 				
-				int optionSelected = JOptionPane.ERROR_MESSAGE;
+				int optionSelected = 0;
 				if (exportDatabase.isSelected()) {
 					fileSelector.setDialogTitle("Export database");
 					optionSelected = fileSelector.showSaveDialog(InventoryDBManagementFrame.this);				
@@ -329,7 +337,7 @@ public class InventoryDBManagementFrame extends JFrame {
 				 
 				if (optionSelected == JFileChooser.APPROVE_OPTION) {
 					fileLocation.setText(fileSelector.getSelectedFile().getPath());
-					lastDirectoryBrowed = fileSelector.getSelectedFile().getParentFile();
+					lastDirectoryBrowsed = fileSelector.getSelectedFile().getParentFile();
 				}	
 			}
 		});
@@ -419,4 +427,21 @@ public class InventoryDBManagementFrame extends JFrame {
 			}			
 		}
 	}
+	
+	/**
+	 * Performs database export to SQL file
+	 * @return true if successful, false otherwise
+	 */
+	public Boolean exportDatabase() {
+		return false; 
+	}
+	
+	/**
+	 * Performs database import from SQL file
+	 * @return true if successful, false otherwise
+	 */
+	public Boolean importDatabase() {
+		return false; 
+	}
+	
 }

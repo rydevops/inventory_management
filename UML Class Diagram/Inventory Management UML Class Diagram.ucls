@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class-diagram version="1.2.2" icons="true" automaticImage="PNG" always-add-relationships="false" 
+  generalizations="false" realizations="false" associations="false" dependencies="false" nesting-relationships="false" 
+  router="FAN">  
+  <class id="1" language="java" name="com.ryorke.database.AccessoryEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/AccessoryEntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="261" width="225" x="928" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="2" language="java" name="com.ryorke.database.GameEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/GameEntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="297" width="207" x="1193" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="3" language="java" name="com.ryorke.database.UserEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/UserEntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="261" width="207" x="1440" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="4" language="java" name="com.ryorke.database.ItemEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/ItemEntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="261" width="264" x="1687" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="5" language="java" name="com.ryorke.database.ConsoleEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/ConsoleEntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="279" width="207" x="1991" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="6" language="java" name="com.ryorke.database.SQLiteDBManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/SQLiteDBManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="297" width="279" x="2238" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="7" language="java" name="com.ryorke.database.EntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/EntityManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="99" width="178" x="2557" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="8" language="java" name="com.ryorke.database.ManufactureEntityManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/database/ManufactureEntityManager.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="243" width="237" x="2775" y="1942"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="9" language="java" name="com.ryorke.entity.Manufacture" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/Manufacture.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="189" width="152" x="574" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="10" language="java" name="com.ryorke.entity.User" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/User.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="477" width="233" x="766" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="11" language="java" name="com.ryorke.entity.PackageDimension" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/PackageDimension.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="315" width="217" x="1039" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="12" language="java" name="com.ryorke.entity.Game" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/Game.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="333" width="406" x="1296" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="13" language="java" name="com.ryorke.entity.Item" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/Item.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="513" width="324" x="1742" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="14" language="java" name="com.ryorke.entity.Console" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/Console.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="369" width="471" x="2106" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="15" language="java" name="com.ryorke.entity.Accessory" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/Accessory.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="261" width="435" x="2617" y="2414"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="16" language="java" name="com.ryorke.entity.exception.InvalidUserAttributeException" 
+    project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/entity/exception/InvalidUserAttributeException.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="81" width="203" x="789" y="3060"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="17" language="java" name="com.ryorke.UserManagementDialog" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/UserManagementDialog.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="603" width="394" x="123" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="18" language="java" name="com.ryorke.ItemEditor" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/ItemEditor.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="135" width="144" x="557" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="19" language="java" name="com.ryorke.GameSelectionDialog" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/GameSelectionDialog.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="171" width="211" x="741" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="20" language="java" name="com.ryorke.ConsolePanel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/ConsolePanel.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="513" width="394" x="992" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="21" language="java" name="com.ryorke.ItemPanel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/ItemPanel.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="747" width="394" x="1426" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="22" language="java" name="com.ryorke.AuthenticationFrame.InputHandler" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/AuthenticationFrame.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="153" width="208" x="1860" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="23" language="java" name="com.ryorke.ItemEditorDialog" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/ItemEditorDialog.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="261" width="161" x="2108" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="24" language="java" name="com.ryorke.InventoryManagementFrame" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/InventoryManagementFrame.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="477" width="229" x="2309" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="25" language="java" name="com.ryorke.AccessoryPanel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/AccessoryPanel.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="405" width="394" x="2578" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="26" language="java" name="com.ryorke.InventoryDBManagementFrame.FileSelector" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/InventoryDBManagementFrame.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="99" width="141" x="3012" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="27" language="java" name="com.ryorke.GameSelectionDialog.GameTableModel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/GameSelectionDialog.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="351" width="211" x="3193" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="28" language="java" name="com.ryorke.InventoryManager" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/InventoryManager.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="99" width="126" x="3444" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="29" language="java" name="com.ryorke.UserManagementDialog.UserTableModel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/UserManagementDialog.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="369" width="165" x="3610" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="30" language="java" name="com.ryorke.InventoryManagementFrame.InventoryTableModel" 
+    project="InventoryManagement" file="/InventoryManagement/src/com/ryorke/InventoryManagementFrame.java" 
+    binary="false" corner="BOTTOM_RIGHT">    
+    <position height="441" width="247" x="3815" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="31" language="java" name="com.ryorke.AuthenticationFrame" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/AuthenticationFrame.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="297" width="213" x="4102" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="32" language="java" name="com.ryorke.GamePanel" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/GamePanel.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="405" width="394" x="4355" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="33" language="java" name="com.ryorke.InventoryDBManagementFrame" project="InventoryManagement" 
+    file="/InventoryManagement/src/com/ryorke/InventoryDBManagementFrame.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="387" width="212" x="4789" y="1097"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    sort-features="false" accessors="true" visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true" static="true"/>    
+    <operations public="true" package="true" protected="true" private="true" static="true"/>  
+  </classifier-display>  
+  <association-display labels="false" multiplicity="false"/>
+</class-diagram>
