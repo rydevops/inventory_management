@@ -560,10 +560,22 @@ public class InventoryManagementFrame extends JFrame {
 			
 			if (response == JOptionPane.YES_OPTION) {
 				try {
-					inventoryTableModel.deleteRow(selectedItemIndex);
-				} catch (SQLException exception) {
+					Item selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+					boolean performDelete = true;
+					
+					if (selectedItem instanceof Game && gameIncludedWithConsole((Game)selectedItem)) {
+						performDelete = false;
+						JOptionPane.showMessageDialog(this, 
+								"Unable to delete selected game. This game is included with a console and must be excluded before continuing.", 
+								"Deletion aborted", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+					}
+					
+					if (performDelete) {
+						inventoryTableModel.deleteRow(selectedItemIndex);
+					}
+				} catch (SQLException | IOException | ParseException exception) {
 					String errorMessage = String.format("Unable to delete selected item.\nReason:\n%s", exception.getMessage());
-					JOptionPane.showMessageDialog(null, errorMessage, "Item deletion failed", 
+					JOptionPane.showMessageDialog(this, errorMessage, "Item deletion failed", 
 							JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -575,6 +587,38 @@ public class InventoryManagementFrame extends JFrame {
 			JOptionPane.showMessageDialog(this, message, title, options);			
 		}
 		
+	}
+	
+	
+	/**
+	 * Performs check to determine if the Game is a game included with a console
+	 * 
+	 * @param game An existing game object
+	 * @return True if game is included as part of a console, false otherwise
+	 * @throws SQLException If a database error occurs
+	 * @throws IOException If database cannot access the database file
+	 * @throws ParseException If an error occurs in parsing data from the database
+	 */
+	private boolean gameIncludedWithConsole(Game game) throws SQLException, IOException, ParseException {
+		boolean gameReferencedByConsole = false;
+
+		ConsoleEntityManager consoleManager = ConsoleEntityManager.getManager();
+		ArrayList<Console> consoles = consoleManager.getConsoles();
+		for (Console console : consoles) {
+			if (console.getIncludedGameId() != null) {
+				for (int includedGameId : console.getIncludedGameId()) {
+					if (includedGameId == game.getItemNumber()) {
+						gameReferencedByConsole = true;
+						break;
+					}
+				}
+			}
+				
+			if (gameReferencedByConsole)
+				break;
+		}
+		
+		return gameReferencedByConsole; 
 	}
 	
 	/**
