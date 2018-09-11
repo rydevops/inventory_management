@@ -28,6 +28,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
@@ -142,10 +143,12 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not implemented
+			 * Selects all text
 			 */
 			@Override
-			public void focusGained(FocusEvent e) {}
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
 		});
 		JLabel colorLabel = createJLabel("Color:", SwingConstants.RIGHT, KeyEvent.VK_O, color);
 		addComponent(controls, layout, constraint, colorLabel);
@@ -165,10 +168,12 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not implemented
+			 * Selects all text
 			 */
 			@Override
-			public void focusGained(FocusEvent e) {}
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
 		});
 		JLabel modelNumberLabel = createJLabel("Model number:", SwingConstants.RIGHT, KeyEvent.VK_E, modelNumber);
 		constraint.weightx = 0;
@@ -190,10 +195,12 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not implemented
+			 * Selects all text
 			 */
 			@Override
-			public void focusGained(FocusEvent e) {}
+			public void focusGained(FocusEvent e) {
+				selectAllData(e.getSource());
+			}
 		});
 		JLabel platformIdLabel = createJLabel("Platform ID:", SwingConstants.RIGHT, KeyEvent.VK_F, platformId);
 		constraint.weightx = 0;
@@ -209,6 +216,22 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		constraint.weighty = 1;	
 		addComponent(controls, layout, constraint, filler);
 		return controls;
+	}
+	
+	/**
+	 * If field is a textbox/textarea type fields
+	 * it will automatically select everything in the field. 
+	 * 
+	 * @param sourceElement A source element to apply the selectAll to
+	 */
+	private void selectAllData(Object sourceElement) {
+		if (sourceElement instanceof JTextField) {
+			JTextField textbox = (JTextField) sourceElement;
+			textbox.selectAll();
+		} else if (sourceElement instanceof JTextArea) {
+			JTextArea textarea = (JTextArea) sourceElement;
+			textarea.selectAll();			
+		}
 	}
 	
 	/**

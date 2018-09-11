@@ -331,10 +331,25 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 
 
 	/**
-	 * Not implemented/used
+	 * If field is a textbox type fields or combobox
+	 * it will automatically select everything in the field. 
+	 * 
 	 */
+	@SuppressWarnings("rawtypes")
 	@Override
-	public void focusGained(FocusEvent e) {}
+	public void focusGained(FocusEvent e) {
+		Object sourceElement = e.getSource();
+		if (sourceElement instanceof JTextField) {
+			JTextField textbox = (JTextField) sourceElement;
+			textbox.selectAll();
+		} else if (sourceElement instanceof JTextArea) {
+			JTextArea textarea = (JTextArea) sourceElement;
+			textarea.selectAll();			
+		} else if (sourceElement instanceof JComboBox) {
+			JComboBox combobox = (JComboBox) sourceElement;
+			((JTextField)combobox.getEditor().getEditorComponent()).selectAll();
+		}
+	}
 
 
 	/**

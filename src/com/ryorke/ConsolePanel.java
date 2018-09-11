@@ -37,6 +37,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.SpinnerNumberModel;
@@ -158,11 +159,11 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not used
+			 * Select data in field
 			 */
 			@Override
 			public void focusGained(FocusEvent e) {
-				
+				selectAllData(e.getSource());
 			}
 		});
 		JLabel colorLabel = createJLabel("Color:", SwingConstants.RIGHT, KeyEvent.VK_O, color);
@@ -184,11 +185,11 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not used
+			 * Selects all in field
 			 */
 			@Override
 			public void focusGained(FocusEvent e) {
-				
+				selectAllData(e.getSource());
 			}
 		});
 		JLabel diskSpaceLabel = createJLabel("Disk space:", SwingConstants.RIGHT, KeyEvent.VK_K, diskSpace);		
@@ -211,11 +212,11 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 			}
 			
 			/**
-			 * Not used
+			 * Selects all text in the field
 			 */
 			@Override
 			public void focusGained(FocusEvent e) {
-				
+				selectAllData(e.getSource());
 			}
 		});
 		JLabel modelNumberLabel = createJLabel("Model number:", SwingConstants.RIGHT, KeyEvent.VK_B, modelNumber);
@@ -286,6 +287,22 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 		addComponent(controls, layout, constraint, removeGame);
 
 		return controls;
+	}
+	
+	/**
+	 * If field is a textbox/textarea type fields
+	 * it will automatically select everything in the field. 
+	 * 
+	 * @param sourceElement A source element to apply the selectAll to
+	 */
+	private void selectAllData(Object sourceElement) {
+		if (sourceElement instanceof JTextField) {
+			JTextField textbox = (JTextField) sourceElement;
+			textbox.selectAll();
+		} else if (sourceElement instanceof JTextArea) {
+			JTextArea textarea = (JTextArea) sourceElement;
+			textarea.selectAll();			
+		}
 	}
 	
 	/**
