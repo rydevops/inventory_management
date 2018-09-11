@@ -574,7 +574,7 @@ public class InventoryManagementFrame extends JFrame {
 						inventoryTableModel.deleteRow(selectedItemIndex);
 					}
 				} catch (SQLException | IOException | ParseException exception) {
-					String errorMessage = String.format("Unable to delete selected item due to a database error.\n\nReason:\n%s", exception.getMessage());
+					String errorMessage = String.format("Unable to delete selected item. Ensure that no items refer to this item before attempting to delete it.\n\nReason:\n%s", exception.getMessage());
 					JOptionPane.showMessageDialog(this, errorMessage, "Item deletion failed", 
 							JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 				}
