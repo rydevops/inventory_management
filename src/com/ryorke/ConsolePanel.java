@@ -387,7 +387,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 	 * @return
 	 */
 	public boolean checkAllFields() {
-		return checkColor() && checkDiskSpace() && checkModelNumber();
+		return checkColor() & checkDiskSpace() & checkModelNumber();
 	}
 	
 	/**

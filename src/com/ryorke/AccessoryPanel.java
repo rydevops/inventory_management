@@ -255,7 +255,7 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 	 * @return
 	 */
 	public boolean checkAllFields() {
-		return checkColor() && checkModelNumber() && checkPlatformId();
+		return checkColor() & checkModelNumber() & checkPlatformId();
 	}
 	
 	/**

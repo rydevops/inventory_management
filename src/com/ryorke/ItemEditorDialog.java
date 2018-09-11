@@ -163,7 +163,7 @@ public class ItemEditorDialog extends JDialog {
 		ItemEditor itemPanel = (ItemEditor) genericItemPanel;
 		ItemEditor specificPanel = (ItemEditor) itemSpecificPanel;
 		
-		if (itemPanel.checkAllFields() && specificPanel.checkAllFields()) {
+		if (itemPanel.checkAllFields() & specificPanel.checkAllFields()) {
 			itemPanel.updateItem();
 			specificPanel.updateItem();
 			

@@ -683,10 +683,10 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 * @return
 	 */
 	public boolean checkAllFields() {
-		return checkProductName() && checkProductDescription()
-		&& checkManufacture() && checkUnitsInStock() && checkUnitCost()
-		&& checkReleaseDate() && checkWidth() && checkHeight() 
-		&& checkDepth() && checkWeight();
+		return checkProductName() & checkProductDescription()
+		& checkManufacture() & checkUnitsInStock() & checkUnitCost()
+		& checkReleaseDate() & checkWidth() & checkHeight() 
+		& checkDepth() & checkWeight();
 	}
 	
 	/**
