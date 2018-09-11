@@ -136,7 +136,7 @@ public class InventoryManagementFrame extends JFrame {
 				if (promptOnClose) {
 					String[] options = {"Logout", "Exit", "Cancel"};
 					int response = JOptionPane.showOptionDialog(InventoryManagementFrame.this, 
-							"Select an action:", "Closing", JOptionPane.YES_NO_CANCEL_OPTION, 
+							"Select an action:", "Application exiting", JOptionPane.YES_NO_CANCEL_OPTION, 
 							JOptionPane.QUESTION_MESSAGE, null, options, options[CANCEL_ACTION]);
 					
 					if (response == LOGOUT_ACTION) {
@@ -233,7 +233,7 @@ public class InventoryManagementFrame extends JFrame {
 				inventoryTableModel.fireTableRowsUpdated(selectedRow, selectedRow);
 			}
 		} else {
-			JOptionPane.showMessageDialog(this, "No item selected to be edited", 
+			JOptionPane.showMessageDialog(this, "No item selected to be edited. Select an item and try again.", 
 					"No item selected", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
 	}
@@ -273,7 +273,7 @@ public class InventoryManagementFrame extends JFrame {
 			inventoryTableModel = new InventoryTableModel();
 		} catch (SQLException | IOException | ParseException exception) {
 			String errorMessage = String.format("An error occured while attempting to load "
-					+ "the inventory list.\nThe application will now close.\nContact your system "
+					+ "the inventory from the database.\nThe application will now close.\nContact your system "
 					+ "administrator if the problem persists.\nReason:\n%s", exception.getMessage());
 			String errorTitle = "Unable to load inventory";
 			int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
@@ -407,13 +407,13 @@ public class InventoryManagementFrame extends JFrame {
 					UserManagementDialog userManagement = new UserManagementDialog(InventoryManagementFrame.this);
 					userManagement.setVisible(true);
 				}   catch (SQLException | IOException exception) {
-					String errorMessage = String.format("Unable to retrieve users.\nReason:\n%s", exception.getMessage());
+					String errorMessage = String.format("Unable to retrieve users from the database.\n\nReason:\n%s", exception.getMessage());
 					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
 				} catch (InvalidUserAttributeException invalidUserAttributeException) {
 					// This catch should only occur if database modifications are performed outside of this
 					// application. 
-					String errorMessage = String.format("Unable to process users due to database schema error. Contact system administrator for further assistance.\n"
+					String errorMessage = String.format("User databse table corrupted. Unable to retrieve users. Contact system administrator for further assistance.\n\n"
 							+ "Response:\n%s", invalidUserAttributeException.getMessage());
 					int displayOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 					JOptionPane.showMessageDialog(null, errorMessage, "Failed to retrieve users", displayOptions);
@@ -442,7 +442,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(InventoryManagementFrame.this, 
-						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.4", 
+						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.3", 
 						"About", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
@@ -574,13 +574,13 @@ public class InventoryManagementFrame extends JFrame {
 						inventoryTableModel.deleteRow(selectedItemIndex);
 					}
 				} catch (SQLException | IOException | ParseException exception) {
-					String errorMessage = String.format("Unable to delete selected item.\nReason:\n%s", exception.getMessage());
+					String errorMessage = String.format("Unable to delete selected item due to a database error.\n\nReason:\n%s", exception.getMessage());
 					JOptionPane.showMessageDialog(this, errorMessage, "Item deletion failed", 
 							JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		} else {
-			message = "An item must be selected before performing a delete.";
+			message = "An item must be selected before performing a delete operation.";
 			title = "Delete failed";
 			options = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 			

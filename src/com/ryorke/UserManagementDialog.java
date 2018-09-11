@@ -512,11 +512,12 @@ public class UserManagementDialog extends JDialog {
 				userTableModel.updateUser(modifiedUser);
 			}			
 		} catch (InvalidUserAttributeException exception) {
-			JOptionPane.showMessageDialog(this, exception.getMessage(), errorTitle, errorDisplayOptions);
+			JOptionPane.showMessageDialog(this, "Unable to save user to database due to a corrupted user table. Check with your System administrator if problem persists."
+					+ "\n\nReason:\n" + exception.getMessage(), errorTitle, errorDisplayOptions);
 			this.username.requestFocus();
 			return;
 		} catch (SQLException sqlException) {
-			String sqlErrorMessage = String.format("Unable to create user. If problem persist contact System Administrator.\nReason:\n%s", 
+			String sqlErrorMessage = String.format("Unable to create user due to a database error. If problem persist contact System Administrator.\n\nReason:\n%s", 
 					sqlException.getMessage());
 			JOptionPane.showMessageDialog(this, sqlErrorMessage, errorTitle, errorDisplayOptions);
 			return;

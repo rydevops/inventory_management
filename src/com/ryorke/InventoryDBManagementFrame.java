@@ -325,7 +325,7 @@ public class InventoryDBManagementFrame extends JFrame {
 				fileSelector.setMultiSelectionEnabled(false);
 				fileSelector.setCurrentDirectory( (lastDirectoryBrowed != null) ? lastDirectoryBrowed : defaultLocation );
 				
-				int optionSelected = JOptionPane.ERROR_MESSAGE;
+				int optionSelected = 0;
 				if (exportDatabase.isSelected()) {
 					fileSelector.setDialogTitle("Export database");
 					optionSelected = fileSelector.showSaveDialog(InventoryDBManagementFrame.this);				

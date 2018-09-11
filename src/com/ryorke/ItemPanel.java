@@ -204,8 +204,9 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 				}
 			}
 		} catch (SQLException | IOException exception) {
-			JOptionPane.showMessageDialog(this, String.format("Unable to load manufactures."
-					+ "\nReason:\n%s", exception.getMessage()), "Manufacture load error", 
+			JOptionPane.showMessageDialog(this, String.format("An error occured while attempting to retrieve the manufacture information from the database. "
+					+ "Contact your System Administrator if the problem persists. "
+					+ "\n\nReason:\n%s", exception.getMessage()), "Manufacture load error", 
 					JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
 		constraint.gridwidth = 1;

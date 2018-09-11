@@ -103,8 +103,8 @@ public class ItemEditorDialog extends JDialog {
 			}
 		} catch (SQLException | IOException exception) {
 			JOptionPane.showMessageDialog(null, 
-					String.format("Failed to connect to the databse.\nReason:\n%s", exception.getMessage()), 
-					"Database error", 
+					String.format("Connection to database was lost and unable to retrieve item details.\n\nReason:\n%s", exception.getMessage()), 
+					"Database error occured", 
 					JOptionPane.OK_OPTION|JOptionPane.ERROR_MESSAGE);
 		}
 		if (itemSpecificPanel != null) {
@@ -155,7 +155,7 @@ public class ItemEditorDialog extends JDialog {
 	 * If an error occurs, the user will be notified. 
 	 */
 	public void performSave() {
-		String error = "Unable to save %s.\nReason:\n%s";
+		String error = "Unable to save %s due to a database error. Contact your System Administrator if problem persists.\n\nReason:\n%s";
 		String title = "Save failed";
 		int windowOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
 		saved = false;	// Always reset just in case dialog is shown multiple times in future
@@ -209,7 +209,7 @@ public class ItemEditorDialog extends JDialog {
 			}
 		} else {
 			JOptionPane.showMessageDialog(this, "Unable to save item. One or more "
-					+ "fields contain errors.", title, windowOptions);
+					+ "fields contain invalid information.", title, windowOptions);
 		}		
 		
 		if (wasSaved()) {

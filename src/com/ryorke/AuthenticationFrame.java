@@ -193,7 +193,7 @@ public class AuthenticationFrame extends JFrame {
 		try {
 			userEntityManager = UserEntityManager.getManager();
 		} catch (Exception exception) {
-			String errorMessage = "Unable to access database at this time. The application will now exit.\n\nDatabase Errors:\n";
+			String errorMessage = "Access to the database is currently unavailable and the application will now exit.\n\nDatabase Errors:\n";
 			errorMessage += exception.getMessage() + "\n";
 			
 			for (Throwable suppressedException : exception.getSuppressed()) {
@@ -225,7 +225,7 @@ public class AuthenticationFrame extends JFrame {
 				} else {
 					invalidLoginCount++;
 					if (invalidLoginCount >= MAX_LOGIN_ATTEMPTS ) {
-						JOptionPane.showMessageDialog(this, "Too many login attempts. Now exiting...", "Authentication Failure", 
+						JOptionPane.showMessageDialog(this, "Too many failed login attempts. Now exiting...", "Authentication Failure", 
 								JOptionPane.ERROR_MESSAGE | JOptionPane.OK_OPTION);
 						dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));						
 					} else {
@@ -239,7 +239,7 @@ public class AuthenticationFrame extends JFrame {
 					}			
 				}
 			} catch (SQLException exception) {
-				String errorMessage = "An error occured while trying to perform authentication. Please try again.\n\nDatabase Errors:\n";
+				String errorMessage = "A database error occured while validating your credentials. Please try again later.\n\nDatabase Errors:\n";
 				errorMessage += exception.getMessage() + "\n";
 				
 				for (Throwable suppressedException : exception.getSuppressed()) {
@@ -248,8 +248,8 @@ public class AuthenticationFrame extends JFrame {
 			
 				JOptionPane.showMessageDialog(this, errorMessage, "Unable to access database", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 			} catch (InvalidUserAttributeException invalidUserException) {
-				String errorMessage = String.format("An unknown database error occured while attempting to authenticate user. "
-						+ "Contact your System Administrator if problem persists.\nReason:%s", invalidUserException.getMessage());
+				String errorMessage = String.format("The user authentication table is corrupted. "
+						+ "Contact your System Administrator if problem persists.\n\nReason:%s", invalidUserException.getMessage());
 				JOptionPane.showMessageDialog(this, errorMessage, "Invalid user type", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 			}
 		}

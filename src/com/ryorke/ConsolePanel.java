@@ -250,7 +250,7 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 					gameListModel.addElement(manager.getGame(gameId));
 				}
 			} catch (Exception exception) {
-				JOptionPane.showMessageDialog(parent, String.format("Unable to load included games list.\nReason:\n%s", 
+				JOptionPane.showMessageDialog(parent, String.format("Unable to load included games list from the database.\n\nReason:\n%s", 
 						exception.getMessage()), "Game list failed to load", 
 						JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 				this.dispatchEvent(new WindowEvent(parent, WindowEvent.WINDOW_CLOSING));
@@ -316,8 +316,8 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 				model.removeElementAt(selectedGameIndices[selectedGameIndex]);
 			}
 		else
-			JOptionPane.showMessageDialog(parent, "Select a game to be delete.", 
-					"No game selected", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(parent, "No game selected for deletion. Make sure a game has been selected and try again.", 
+					"Removing game aborted", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 		
 	}
 	
@@ -348,12 +348,12 @@ public class ConsolePanel extends JPanel implements ItemEditor {
 					}
 				}
 			} else {
-				JOptionPane.showMessageDialog(this, "No games found for this console", 
-						"No games found", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(this, "No games were found for this console.", 
+						"Add game error", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 				
 			}
 		} catch (Exception exception) {
-			JOptionPane.showMessageDialog(this, "Unable to load game list", 
+			JOptionPane.showMessageDialog(this, "Unable to load included games list from the database.", 
 					"Error loading game list", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 		}
 	}
