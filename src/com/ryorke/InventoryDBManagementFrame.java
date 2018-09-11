@@ -53,7 +53,7 @@ import javax.swing.JFrame;
 @SuppressWarnings("serial")
 public class InventoryDBManagementFrame extends JFrame {
 	public final static String WINDOW_TITLE = "Database Management";
-	private static File lastDirectoryBrowed = null;
+	private static File lastDirectoryBrowsed = null;
 	
 	private JTextField fileLocation; 
 	private JProgressBar progressBar;
@@ -323,7 +323,7 @@ public class InventoryDBManagementFrame extends JFrame {
 				fileSelector.addChoosableFileFilter(sqlFilter);
 				fileSelector.setFileFilter(sqlFilter);
 				fileSelector.setMultiSelectionEnabled(false);
-				fileSelector.setCurrentDirectory( (lastDirectoryBrowed != null) ? lastDirectoryBrowed : defaultLocation );
+				fileSelector.setCurrentDirectory( (lastDirectoryBrowsed != null) ? lastDirectoryBrowsed : defaultLocation );
 				
 				int optionSelected = 0;
 				if (exportDatabase.isSelected()) {
@@ -337,7 +337,7 @@ public class InventoryDBManagementFrame extends JFrame {
 				 
 				if (optionSelected == JFileChooser.APPROVE_OPTION) {
 					fileLocation.setText(fileSelector.getSelectedFile().getPath());
-					lastDirectoryBrowed = fileSelector.getSelectedFile().getParentFile();
+					lastDirectoryBrowsed = fileSelector.getSelectedFile().getParentFile();
 				}	
 			}
 		});
@@ -427,4 +427,21 @@ public class InventoryDBManagementFrame extends JFrame {
 			}			
 		}
 	}
+	
+	/**
+	 * Performs database export to SQL file
+	 * @return true if successful, false otherwise
+	 */
+	public Boolean exportDatabase() {
+		return false; 
+	}
+	
+	/**
+	 * Performs database import from SQL file
+	 * @return true if successful, false otherwise
+	 */
+	public Boolean importDatabase() {
+		return false; 
+	}
+	
 }
