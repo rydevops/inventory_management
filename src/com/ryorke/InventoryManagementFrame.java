@@ -20,6 +20,8 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
@@ -281,7 +283,48 @@ public class InventoryManagementFrame extends JFrame {
 		}
 		
 		inventoryTable = new JTable(inventoryTableModel);
-		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);		
+		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);	
+		inventoryTable.addMouseListener(new MouseListener() {
+
+			/**
+			 * Begins editing an item when double clicked
+			 */
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && !e.isConsumed()) {
+					showEditItemDialog();
+				}				
+			}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mousePressed(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mousePressed(MouseEvent e) {}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseExited(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			
+			/*
+			 * (non-Javadoc)
+			 * @see java.awt.event.MouseListener#mouseEntered(java.awt.event.MouseEvent)
+			 */
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+			
+		});
 		
 		JScrollPane tableScroller = new JScrollPane(inventoryTable);
 		
