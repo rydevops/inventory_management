@@ -79,8 +79,8 @@ public class GameEntityManager implements EntityManager {
 				+ "numberOfPlayers INTEGER NOT NULL, "
 				+ "consoleId INTEGER NOT NULL, "
 				+ "esrbRating TEXT NOT NULL,"
-				+ "FOREIGN KEY(gameId) REFERENCES item(itemId),"
-				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId))";
+				+ "FOREIGN KEY(gameId) REFERENCES item(itemId) ON DELETE RESTRICT,"
+				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("game")) {
 			try (Connection dbConnection = databaseManager.getConnection();

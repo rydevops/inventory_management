@@ -102,7 +102,7 @@ public class ConsoleEntityManager implements EntityManager {
 				+ "diskSpace TEXT NOT NULL, "
 				+ "includedGameIds TEXT, "  // comma-separated gameIds
 				+ "modelNumber TEXT NOT NULL,"
-				+ "FOREIGN KEY(consoleId) REFERENCES item(itemId))";
+				+ "FOREIGN KEY(consoleId) REFERENCES item(itemId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("console")) {
 			try (Connection dbConnection = databaseManager.getConnection();

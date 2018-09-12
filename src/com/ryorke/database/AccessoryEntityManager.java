@@ -78,8 +78,8 @@ public class AccessoryEntityManager implements EntityManager {
 				+ "color TEXT NOT NULL, "
 				+ "consoleId INTEGER NOT NULL, "	// An id to an existing console
 				+ "modelNumber TEXT NOT NULL,"
-				+ "FOREIGN KEY(accessoryId) REFERENCES item(itemId),"
-				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId))";
+				+ "FOREIGN KEY(accessoryId) REFERENCES item(itemId) ON DELETE RESTRICT,"
+				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("accessory")) {
 			try (Connection dbConnection = databaseManager.getConnection();

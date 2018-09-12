@@ -87,7 +87,7 @@ public class ItemEntityManager implements EntityManager {
 				+ "height REAL DEFAULT 0.000 NOT NULL, "
 				+ "depth REAL DEFAULT 0.000 NOT NULL, "
 				+ "weight REAL DEFAULT 0.000 NOT NULL,"
-				+ "FOREIGN KEY(manufactureId) REFERENCES manufacture(manufactureId))";
+				+ "FOREIGN KEY(manufactureId) REFERENCES manufacture(manufactureId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("item")) {
 			try (Connection dbConnection = databaseManager.getConnection();

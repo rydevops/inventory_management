@@ -512,7 +512,7 @@ public class UserManagementDialog extends JDialog {
 				userTableModel.updateUser(modifiedUser);
 			}			
 		} catch (InvalidUserAttributeException exception) {
-			JOptionPane.showMessageDialog(this, "Unable to save user to database due to a corrupted user table. Check with your System administrator if problem persists."
+			JOptionPane.showMessageDialog(this, "Unable to save user. Check with your System administrator if problem persists."
 					+ "\n\nReason:\n" + exception.getMessage(), errorTitle, errorDisplayOptions);
 			this.username.requestFocus();
 			return;
