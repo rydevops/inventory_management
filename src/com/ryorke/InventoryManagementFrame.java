@@ -26,6 +26,8 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -795,10 +797,13 @@ public class InventoryManagementFrame extends JFrame {
 					
 					break;
 				case ITEM_UNITS_IN_STOCK:
-					value = item.getUnitsInStock();
+					DecimalFormat decimalFormatter = new DecimalFormat("#,##0");
+					decimalFormatter.setMaximumFractionDigits(0);
+					value = decimalFormatter.format(item.getUnitsInStock());
 					break;
 				case ITEM_UNIT_COST:
-					value = item.getUnitCost();
+					NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance();
+					value = currencyFormatter.format(item.getUnitCost());
 					break;
 				case ITEM_MANUFACTURE:
 					value = item.getManufacture();
