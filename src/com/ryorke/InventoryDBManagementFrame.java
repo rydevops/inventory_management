@@ -20,9 +20,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -33,6 +38,10 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import com.ryorke.database.SQLiteDBManager;
+import com.ryorke.database.UserEntityManager;
+
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -201,63 +210,25 @@ public class InventoryDBManagementFrame extends JFrame {
 			 * @param e Action event information
 			 */
 			@Override
-			public void actionPerformed(ActionEvent e) {														
-				// =========== SAMPLE PROGRESS BAR VALUES ===========					
+			public void actionPerformed(ActionEvent e) {
 				File selectedFile = new File(fileLocation.getText());
 				
-				if (selectedFile.getPath().length() > 0 && 
-						(exportDatabase.isSelected() || selectedFile.exists())) {
-					progressBar.setValue(0);
-					progressBar.setVisible(true);
-					progressBar.setStringPainted(true);	
-					setEnableControls(false);
-					setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-					Timer progressRunner = new Timer();		
-					progressRunner.scheduleAtFixedRate(new TimerTask() {
-						/** 
-						 * Updates the progress bar (visually and textually) until
-						 * the progress bar is completed based on the type of operation
-						 * being performed.
-						 */
-						@Override
-						public void run() {
-							int currentValue = progressBar.getValue();													
-							currentValue++;
-							String statusString = "";
-							if (exportDatabase.isSelected()) {
-								statusString = new Integer(currentValue).toString() + "% Exported";
-							} else {
-								statusString = new Integer(currentValue).toString() + "% Imported";
-							}
-							progressBar.setString(statusString);
-							progressBar.setValue(currentValue);
-							
-							if (currentValue == 100) {
-								setEnableControls(true);
-								setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-								if (exportDatabase.isSelected()) {
-									statusString = "Export completed successfully!";
-								} else {
-									statusString = "Import completed successfully!";
-								}
-								progressBar.setString(statusString);
-								cancel();
-							}
-						}
-					}, 50, 50);
-				} else {
-					if (selectedFile.getPath().length() == 0) {
-						JOptionPane.showMessageDialog(null, 
-								"File location not set.\nSet file location and try again.", 
-								"File not set", JOptionPane.ERROR_MESSAGE);
+				if (selectedFile.getPath().length() > 0) {
+					if (exportDatabase.isSelected()) {
+						exportDatabase(selectedFile);
+					} else if (selectedFile.exists()) {
+						importDatabase(selectedFile);
 					} else {
 						JOptionPane.showMessageDialog(null, 
-								"Selected file for import does not exist.", 
-								"File not found", JOptionPane.ERROR_MESSAGE);
+							"Selected file for import does not exist.", 
+							"File not found", JOptionPane.ERROR_MESSAGE);
 					}
-				}
-				// ============ END OF SAMPLE TIMER ===========
-				
+				} else {
+
+					JOptionPane.showMessageDialog(null, 
+						"File location not set.\nSet file location and try again.", 
+						"File not set", JOptionPane.ERROR_MESSAGE);
+				}				
 			}
 		});
 		return panel;
@@ -331,7 +302,6 @@ public class InventoryDBManagementFrame extends JFrame {
 					optionSelected = fileSelector.showSaveDialog(InventoryDBManagementFrame.this);				
 				} else {
 					fileSelector.setDialogTitle("Import database");
-					fileSelector.setAcceptAllFileFilterUsed(false);
 					optionSelected = fileSelector.showOpenDialog(InventoryDBManagementFrame.this);						
 				}
 				 
@@ -344,6 +314,126 @@ public class InventoryDBManagementFrame extends JFrame {
 		
 		return panel;
 		
+	}
+	
+	/**
+	 * Updates a progress bar including the text to display on it. 
+	 * 
+	 * @param currentValue A value between 0 and 100 to adjust the progress bar
+	 * @param exporting If true "% Exported" will be displayed, otherwise "% Imported" will be displayed. 
+	 */
+	private void updateProgressBar(int currentValue, boolean exporting) {
+		String progressStatusMessage = String.format("%d%% %s", currentValue, (exporting) ? "Exported" : "Imported");
+		progressBar.setValue(currentValue);
+		progressBar.setString(progressStatusMessage);
+		progressBar.setVisible(true);
+		progressBar.setStringPainted(true);
+	}
+	
+	/**
+	 * Performs database export to SQL file
+	 * @param exportFile A file to save the database SQL statements to
+	 * @return true if successful, false otherwise
+	 */
+	private void exportDatabase(File exportFile) {
+		// Adjust controls 
+		updateProgressBar(0, true);
+		setEnableControls(false);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
+		// Gather SQL instruction set
+		ArrayList<String> exportStatements = null;
+		try {
+			exportStatements = SQLiteDBManager.getManager().exportDatabase();
+			updateProgressBar(10, true);
+		} catch (SQLException | IOException exception) { 
+			JOptionPane.showMessageDialog(null, 
+				String.format("An error occurred while generating backup (Reason: %s)", exception.getMessage()), 
+				"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+		} 
+		
+		// Write data to file
+		if (exportStatements != null) {
+			try (FileWriter fileWriter = new FileWriter(exportFile);
+				 BufferedWriter backupWriter = new BufferedWriter(fileWriter)){
+				for (int lineNumber = 0; lineNumber < exportStatements.size(); lineNumber++) {					
+					backupWriter.write(exportStatements.get(lineNumber) + "\n");
+					
+					// Calculate percentage of data written assuming 10% completed during
+					// database sql statement generation
+					double writtenPercentage = (((((float)lineNumber + 1) / ((float)exportStatements.size())) * 0.9) + 0.1) * 100.0;
+					updateProgressBar((int) writtenPercentage, true);
+				}
+			} catch (IOException exception) {
+				JOptionPane.showMessageDialog(null, 
+					String.format("An error occured while writing backup data to %s (Reason: %s)", 
+							exportFile.getAbsolutePath(), exception.getMessage()), 
+					"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		
+		// Restore window functionality
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setEnableControls(true);		
+	}
+	
+	/**
+	 * Performs database import from SQL file
+	 * 
+	 * @param importFile A file to load SQL statements from
+	 */
+	private void importDatabase(File importFile) {
+		// TODO: Prompt warning before import
+		
+		// Adjust controls 
+		updateProgressBar(0, false);
+		setEnableControls(false);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
+		// TODO: Calculate how many lines are in the file to update the progress bar
+		//       based on that line imported (90% from lines)
+		
+		// Load data from file ignoring blank lines
+		ArrayList<String> importStatements = new ArrayList<String>();
+		try (FileReader fileReader = new FileReader(importFile);
+			 BufferedReader dataReader = new BufferedReader(fileReader)) {
+			// TODO: Check if truncate enables and if not ignore drop and
+			//       create statements
+			String sqlStatement = null;
+			while ((sqlStatement = dataReader.readLine()) != null) {				
+				if (sqlStatement.trim().length() > 0) {
+					importStatements.add(sqlStatement);
+				}
+			}
+		} catch (IOException exception) {
+			JOptionPane.showMessageDialog(null, 
+				String.format("An error occured while reading backup data from %s (Reason: %s)", 
+						importFile.getAbsolutePath(), exception.getMessage()), 
+				"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+		}
+		
+		// Import data into database
+		if (importStatements.size() > 0) {
+			try {
+				SQLiteDBManager.getManager().importDatabase(importStatements);
+				updateProgressBar(100, false);
+			} catch (SQLException | IOException exception) {
+				JOptionPane.showMessageDialog(null, 
+					String.format("An error occurred while importing database. Contact your system adminsitrator for assistance. This application will now exit. (Reason: %s)", exception.getMessage()), 
+					"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+				System.exit(1);
+			}
+		}
+		
+		// Restore window functionality
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setEnableControls(true);
+		
+		// Close application to apply changes
+		JOptionPane.showMessageDialog(null, "Import process completed. The application must restart to apply changes. "
+				+ "This application will now exit.", "Import completed", 
+				JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+		System.exit(0);
 	}
 	
 	/**
@@ -428,20 +518,6 @@ public class InventoryDBManagementFrame extends JFrame {
 		}
 	}
 	
-	/**
-	 * Performs database export to SQL file
-	 * @return true if successful, false otherwise
-	 */
-	public Boolean exportDatabase() {
-		return false; 
-	}
 	
-	/**
-	 * Performs database import from SQL file
-	 * @return true if successful, false otherwise
-	 */
-	public Boolean importDatabase() {
-		return false; 
-	}
 	
 }

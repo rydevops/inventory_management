@@ -75,7 +75,7 @@ public class ConsoleEntityManager implements EntityManager {
 		final String queryConsoleById = "SELECT consoleId as consoleCount FROM console WHERE consoleId = ?";
 		boolean isConsoleId = false; 
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement statement = dbConnection.prepareStatement(queryConsoleById);) {
 			statement.setInt(1, id);
 			ResultSet results = statement.executeQuery();
@@ -105,7 +105,7 @@ public class ConsoleEntityManager implements EntityManager {
 				+ "FOREIGN KEY(consoleId) REFERENCES item(itemId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("console")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
 				sqlStatement.executeUpdate(createTableQuery);
 			}
@@ -123,7 +123,7 @@ public class ConsoleEntityManager implements EntityManager {
 		final String getAllConsolesQuery = "SELECT * FROM console";
 		ArrayList<Console> consoles = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				Statement statement = dbConnection.createStatement();
 				ResultSet consoleResults = statement.executeQuery(getAllConsolesQuery)) {
 			while (consoleResults.next()) {
@@ -176,7 +176,7 @@ public class ConsoleEntityManager implements EntityManager {
 		// Create the associated item record first to acquire a new itemId
 		itemEntityManager.addItem(console);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertStatement = dbConnection.prepareStatement(insertConsoleQuery)) {
 			insertStatement.setInt(1, console.getItemNumber());
 			insertStatement.setString(2, console.getColor());
@@ -213,7 +213,7 @@ public class ConsoleEntityManager implements EntityManager {
 		// Update the item component of this console
 		itemEntityManager.updateItem(console);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateStatement = dbConnection.prepareStatement(updateConsoleQuery)) {
 			updateStatement.setInt(6, console.getItemNumber());
 			updateStatement.setString(1, console.getColor());
@@ -246,7 +246,7 @@ public class ConsoleEntityManager implements EntityManager {
 	public void deleteConsole(Console console) throws SQLException {
 		final String deleteConsoleQuery = "DELETE FROM console WHERE consoleId = ?";
 			
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteConsoleQuery)) {
 			deleteStatement.setInt(1, console.getItemNumber());			
 			deleteStatement.executeUpdate();

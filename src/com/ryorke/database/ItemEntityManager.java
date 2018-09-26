@@ -90,7 +90,7 @@ public class ItemEntityManager implements EntityManager {
 				+ "FOREIGN KEY(manufactureId) REFERENCES manufacture(manufactureId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("item")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
 				sqlStatement.executeUpdate(createItemTable);
 			}
@@ -111,7 +111,7 @@ public class ItemEntityManager implements EntityManager {
 		boolean itemFound = false;
 		
 		if (item != null) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					PreparedStatement statement = dbConnection.prepareStatement(findItemQuery)) {
 				statement.setInt(1, item.getItemNumber());
 				ResultSet queryResult = statement.executeQuery();
@@ -172,7 +172,7 @@ public class ItemEntityManager implements EntityManager {
 		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
 		
 
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertItemStatement = dbConnection.prepareStatement(insertItemQuery)) {
 			insertItemStatement.setString(1, item.getProductName());
 			insertItemStatement.setString(2, item.getProductDescription());
@@ -214,7 +214,7 @@ public class ItemEntityManager implements EntityManager {
 		// that manufacture 
 		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateItemStatement = dbConnection.prepareStatement(updateItemQuery)) {
 			updateItemStatement.setString(1, item.getProductName());
 			updateItemStatement.setString(2, item.getProductDescription());
@@ -240,7 +240,7 @@ public class ItemEntityManager implements EntityManager {
 	public void deleteItem(Item item) throws SQLException {
 		final String deleteItemQuery = "DELETE FROM item WHERE itemId = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteItemQuery)) {
 			deleteStatement.setInt(1, item.getItemNumber());			
 			deleteStatement.executeUpdate();

@@ -13,16 +13,21 @@
  */
 package com.ryorke.database;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.sql.DriverManager;
-import java.sql.ResultSet; 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData; 
 
 /**
  * Responsible for managing the overall 
@@ -72,14 +77,88 @@ public class SQLiteDBManager {
 	}
 	
 	/**
+	 * Generates a list of INSERT statement to import
+	 * based on data in the table. 
+	 * 
+	 * @param tableName The table name to query
+	 * @return A list of INSERT statements or null if no records found or an error occurs
+	 * @throws SQLException if an error occurs while reading records from database
+	 */
+	public ArrayList<String> exportRecords(String tableName) throws SQLException {
+		ArrayList<String> exportSQLResults = null;
+		
+		try (Connection dbConnection = databaseManager.getConnection(true);
+			 Statement queryAllRecords = dbConnection.createStatement()) {		
+			
+			// Extract each column and value into an INSERT statement
+			ResultSet records = queryAllRecords.executeQuery("SELECT * FROM " + tableName);
+			ResultSetMetaData recordMetadata = records.getMetaData();			
+			while (records.next()) {
+				// Only create the record list if at least one record
+				// exists. 
+				if (exportSQLResults == null)
+					exportSQLResults = new ArrayList<String>();
+				
+				ArrayList<String> columnNames = new ArrayList<String>();
+				ArrayList<String> columnValues = new ArrayList<String>();
+				
+				for (int columnIndex = 1; columnIndex <= recordMetadata.getColumnCount(); columnIndex++) {
+					columnNames.add(recordMetadata.getColumnName(columnIndex));
+					
+					switch (recordMetadata.getColumnType(columnIndex)) {
+					case Types.INTEGER:
+					case Types.FLOAT:
+					case Types.DOUBLE:
+						Object objectRecord = records.getObject(columnIndex);
+						if (objectRecord == null)
+							columnValues.add("null");
+						else
+							columnValues.add(objectRecord.toString());
+						break;
+					case Types.VARCHAR:
+					case Types.NVARCHAR:
+						String stringRecord = records.getString(columnIndex);
+						if (stringRecord == null)
+							columnValues.add("null");
+						else
+							columnValues.add(String.format("'%s'", stringRecord));
+						break;
+					default:
+						// Throw an error as we should never hit this spot
+						throw new SQLException("Unknown data type found during export");
+					}														
+				}
+				
+				StringBuilder insertStatement = new StringBuilder();
+				insertStatement.append("INSERT INTO " + tableName + " (");
+				for (int index = 0; index < columnNames.size(); index++) {					
+					insertStatement.append(columnNames.get(index));
+					if (index != columnNames.size() - 1)
+						insertStatement.append(",");
+				}
+				insertStatement.append(") VALUES (");
+				for (int index = 0; index < columnValues.size(); index++) {					
+					insertStatement.append(columnValues.get(index));
+					if (index != columnValues.size() - 1)
+						insertStatement.append(",");
+				}
+				insertStatement.append(")");
+				exportSQLResults.add(insertStatement.toString());
+			}			
+		}
+		
+		return exportSQLResults;
+	}
+	
+	/**
 	 * Establishes a new connections to the database
 	 * 
 	 * @return A new database Connection
 	 * @throws SQLException if unable to access the database
 	 */
-	public Connection getConnection() throws SQLException {
+	public Connection getConnection(Boolean enforceForceKeys) throws SQLException {
 		Properties connectionProperties = new Properties();
-		connectionProperties.setProperty("foreign_keys", "true"); // Enables foreign key support
+		connectionProperties.setProperty("foreign_keys", enforceForceKeys.toString()); // Enables foreign key support
 		Connection databaseConnection = DriverManager.getConnection(connectionURL, connectionProperties);
 		return databaseConnection;
 	}
@@ -94,7 +173,7 @@ public class SQLiteDBManager {
 	 */
 	public boolean tableExists(String tableNamePattern) throws SQLException {
 		boolean tableFound = false;
-		try (Connection connection = getConnection()) {
+		try (Connection connection = getConnection(true)) {
 			DatabaseMetaData metadata = connection.getMetaData();
 			ResultSet results = metadata.getTables(null, null, tableNamePattern, null);
 			tableFound = results.next();
@@ -143,19 +222,37 @@ public class SQLiteDBManager {
 	 * @throws SQLException When a database error occurs. 
 	 */
 	public ArrayList<String> exportDatabase() throws SQLException {
-		// TODO: 
-		// Add implementation details
-		return null;
+		ArrayList<String> sqlStatements = new ArrayList<String>();
+		
+		for (EntityManager manager : registeredEntityManagers) {
+			ArrayList<String> exportData = manager.exportTable();
+			if (exportData != null) {
+				sqlStatements.addAll(exportData);
+			}
+		}
+		
+		return sqlStatements;
 	}
 	
 	/**
-	 * Imports an SQL database file into the database. 
+	 * Imports an SQL database file into the database.
 	 * 
+	 *  Note 1: This file purposefully disables foreign key constraints during import
+	 *          to avoid import ordering errors.        
+	 * 
+	 * Note 2:  No error checking is performed on statements.
+	 * 
+	 * @param sqlStatements A list of statements to execute. 
 	 * @throws SQLException When a database error occurs. 
 	 */
-	public void importDatabase() throws SQLException {
-		// TODO: 
-		// Add implementation details
+	public void importDatabase(ArrayList<String> sqlStatements) throws SQLException, IOException {
+		// TODO: Remove importTable() interface and methods from DB managers
+		try (Connection dbConnection = databaseManager.getConnection(false);
+			 Statement sqlStatement = dbConnection.createStatement()) {
+			for (String statement : sqlStatements) {
+				sqlStatement.execute(statement);
+			}
+		}
 	}
 }
 

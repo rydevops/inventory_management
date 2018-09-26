@@ -73,7 +73,7 @@ public class ManufactureEntityManager implements EntityManager {
 				+ "name TEXT UNIQUE NOT NULL COLLATE NOCASE)";		
 				
 		if (!databaseManager.tableExists("manufacture")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement()) {
 				sqlStatement.executeUpdate(createManufactureTable);
 			}
@@ -92,7 +92,7 @@ public class ManufactureEntityManager implements EntityManager {
 		final String findManufactureQuery = "SELECT name FROM manufacture WHERE manufactureId = ?";
 		Manufacture manufacture = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement statement = dbConnection.prepareStatement(findManufactureQuery)) {
 			statement.setInt(1, manufactureId);
 			ResultSet result = statement.executeQuery();
@@ -115,7 +115,7 @@ public class ManufactureEntityManager implements EntityManager {
 		final String findManufactureQuery = "SELECT * FROM manufacture WHERE name = ?";
 		Manufacture manufacture = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement statement = dbConnection.prepareStatement(findManufactureQuery)) {
 			statement.setString(1, name);
 			ResultSet result = statement.executeQuery();
@@ -143,7 +143,7 @@ public class ManufactureEntityManager implements EntityManager {
 		Manufacture manufacture = findManufacture(name);
 		
 		if (manufacture == null) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					PreparedStatement statement = dbConnection.prepareStatement(addManufactureQuery)) {
 				statement.setString(1, name);
 				statement.executeUpdate();
@@ -171,7 +171,7 @@ public class ManufactureEntityManager implements EntityManager {
 		final String getAllManufacturesQuery = "SELECT * FROM manufacture";
 		ArrayList<Manufacture> manufactures = null; 
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				Statement statement = dbConnection.createStatement();
 				ResultSet results = statement.executeQuery(getAllManufacturesQuery)) {
 			while (results.next()) {

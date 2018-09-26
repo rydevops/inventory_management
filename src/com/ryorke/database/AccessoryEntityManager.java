@@ -82,7 +82,7 @@ public class AccessoryEntityManager implements EntityManager {
 				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
 		
 		if (!databaseManager.tableExists("accessory")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
 				sqlStatement.executeUpdate(createTableQuery);
 			}
@@ -100,7 +100,7 @@ public class AccessoryEntityManager implements EntityManager {
 		final String getAllAccessoriesQuery = "SELECT * FROM accessory";
 		ArrayList<Accessory> accessories = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				Statement statement = dbConnection.createStatement();
 				ResultSet accessoriesResult = statement.executeQuery(getAllAccessoriesQuery)) {
 			while (accessoriesResult.next()) {
@@ -140,7 +140,7 @@ public class AccessoryEntityManager implements EntityManager {
 		// Create the associated item record first to acquire a new itemId
 		itemEntityManager.addItem(accessory);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertStatement = dbConnection.prepareStatement(insertAccessoryQuery)) {
 			insertStatement.setInt(1, accessory.getItemNumber());
 			insertStatement.setString(2, accessory.getColor());
@@ -164,7 +164,7 @@ public class AccessoryEntityManager implements EntityManager {
 		// Update the item component of this accessory
 		itemEntityManager.updateItem(accessory);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateStatement = dbConnection.prepareStatement(updateAccessoryQuery)) {
 			updateStatement.setInt(4, accessory.getItemNumber());
 			updateStatement.setString(1, accessory.getColor());
@@ -185,7 +185,7 @@ public class AccessoryEntityManager implements EntityManager {
 		
 		
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteAccessoryQuery)) {
 			deleteStatement.setInt(1, accessory.getItemNumber());			
 			deleteStatement.executeUpdate();
