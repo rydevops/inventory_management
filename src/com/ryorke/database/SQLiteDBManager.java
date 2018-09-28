@@ -266,6 +266,11 @@ public class SQLiteDBManager {
 	public void dropAllTables() throws SQLException {
 		ArrayList<String> tableNames = new ArrayList<String>();
 		try (Connection dbConnection = databaseManager.getConnection(false)) {
+			// Start a new transaction
+			// NOTE: Without this the import of a large dataset will 
+			//       take an extremely long time. 
+			dbConnection.setAutoCommit(false);
+			
 			// Create a list of tables and then close the results
 			DatabaseMetaData dbMetadata = dbConnection.getMetaData();
 			String[] types = {"TABLE"};
@@ -284,6 +289,8 @@ public class SQLiteDBManager {
 				dropTable.execute("DROP TABLE " + tableName);
 				dropTable.close();
 			}
+			
+			dbConnection.commit();
 		}
 		
 		
