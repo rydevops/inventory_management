@@ -163,6 +163,7 @@ public class SQLiteDBManager {
 	public Connection getConnection(Boolean enforceForceKeys) throws SQLException {
 		Properties connectionProperties = new Properties();
 		connectionProperties.setProperty("foreign_keys", enforceForceKeys.toString()); // Enables foreign key support
+		connectionProperties.setProperty("synchronous", "OFF");
 		Connection databaseConnection = DriverManager.getConnection(connectionURL, connectionProperties);
 		return databaseConnection;
 	}
