@@ -33,6 +33,11 @@ public class ManufactureEntityManager implements EntityManager {
 	private static ManufactureEntityManager entityManager = null;
 	private SQLiteDBManager databaseManager = null;
 	
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS manufacture"
+			+ "(manufactureId INTEGER PRIMARY KEY, " 
+			+ "name TEXT UNIQUE NOT NULL COLLATE NOCASE)";
+	private final static String TABLE_NAME = "manufacture";
+			
 	/** 
 	 * Provides access to the singleton manufacture entity manager
 	 * that is responsible for interacting with the database
@@ -68,14 +73,10 @@ public class ManufactureEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createManufactureTable = "CREATE TABLE IF NOT EXISTS manufacture"
-				+ "(manufactureId INTEGER PRIMARY KEY, " 
-				+ "name TEXT UNIQUE NOT NULL COLLATE NOCASE)";		
-				
 		if (!databaseManager.tableExists("manufacture")) {
 			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement()) {
-				sqlStatement.executeUpdate(createManufactureTable);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}				
 	}
@@ -197,8 +198,16 @@ public class ManufactureEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", ManufactureEntityManager.TABLE_NAME));
+		exportSQLResults.add(ManufactureEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(ManufactureEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

@@ -34,6 +34,15 @@ public class GameEntityManager implements EntityManager {
 	private static GameEntityManager entityManager = null;
 	private static ItemEntityManager itemEntityManager = null;
 	private SQLiteDBManager databaseManager = null;
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS game "
+			+ "(gameId INTEGER UNIQUE NOT NULL, "	// gameId = itemId or foreign key
+			+ "numberOfDiscs INTEGER NOT NULL, "
+			+ "numberOfPlayers INTEGER NOT NULL, "
+			+ "consoleId INTEGER NOT NULL, "
+			+ "esrbRating TEXT NOT NULL,"
+			+ "FOREIGN KEY(gameId) REFERENCES item(itemId) ON DELETE RESTRICT,"
+			+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
+	private static final String TABLE_NAME = "game";
 	
 	/** 
 	 * Provides access to the singleton game entity manager
@@ -73,19 +82,10 @@ public class GameEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createTableQuery = "CREATE TABLE IF NOT EXISTS game "
-				+ "(gameId INTEGER UNIQUE NOT NULL, "	// gameId = itemId or foreign key
-				+ "numberOfDiscs INTEGER NOT NULL, "
-				+ "numberOfPlayers INTEGER NOT NULL, "
-				+ "consoleId INTEGER NOT NULL, "
-				+ "esrbRating TEXT NOT NULL,"
-				+ "FOREIGN KEY(gameId) REFERENCES item(itemId) ON DELETE RESTRICT,"
-				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
-		
 		if (!databaseManager.tableExists("game")) {
 			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createTableQuery);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}
 	}
@@ -286,8 +286,16 @@ public class GameEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", GameEntityManager.TABLE_NAME));
+		exportSQLResults.add(GameEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(GameEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

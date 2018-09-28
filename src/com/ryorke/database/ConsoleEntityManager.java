@@ -34,6 +34,15 @@ public class ConsoleEntityManager implements EntityManager {
 	private static ConsoleEntityManager entityManager = null;
 	private static ItemEntityManager itemEntityManager = null;
 	private SQLiteDBManager databaseManager = null;
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS console "
+			+ "(consoleId INTEGER UNIQUE NOT NULL, "	// consoleId = itemId or foreign key
+			+ "color TEXT NOT NULL, "
+			+ "controllersIncluded INTEGER NOT NULL, "
+			+ "diskSpace TEXT NOT NULL, "
+			+ "includedGameIds TEXT, "  // comma-separated gameIds
+			+ "modelNumber TEXT NOT NULL,"
+			+ "FOREIGN KEY(consoleId) REFERENCES item(itemId) ON DELETE RESTRICT)";
+	private static final String TABLE_NAME = "console";
 	
 	/** 
 	 * Provides access to the singleton console entity manager
@@ -95,19 +104,10 @@ public class ConsoleEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createTableQuery = "CREATE TABLE IF NOT EXISTS console "
-				+ "(consoleId INTEGER UNIQUE NOT NULL, "	// consoleId = itemId or foreign key
-				+ "color TEXT NOT NULL, "
-				+ "controllersIncluded INTEGER NOT NULL, "
-				+ "diskSpace TEXT NOT NULL, "
-				+ "includedGameIds TEXT, "  // comma-separated gameIds
-				+ "modelNumber TEXT NOT NULL,"
-				+ "FOREIGN KEY(consoleId) REFERENCES item(itemId) ON DELETE RESTRICT)";
-		
 		if (!databaseManager.tableExists("console")) {
 			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createTableQuery);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}
 	}
@@ -265,8 +265,16 @@ public class ConsoleEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", ConsoleEntityManager.TABLE_NAME));
+		exportSQLResults.add(ConsoleEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(ConsoleEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

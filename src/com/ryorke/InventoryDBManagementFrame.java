@@ -28,8 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -40,7 +38,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.ryorke.database.SQLiteDBManager;
-import com.ryorke.database.UserEntityManager;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -345,7 +342,7 @@ public class InventoryDBManagementFrame extends JFrame {
 		ArrayList<String> exportStatements = null;
 		try {
 			exportStatements = SQLiteDBManager.getManager().exportDatabase();
-			updateProgressBar(10, true);
+			updateProgressBar(50, true);
 		} catch (SQLException | IOException exception) { 
 			JOptionPane.showMessageDialog(null, 
 				String.format("An error occurred while generating backup (Reason: %s)", exception.getMessage()), 
@@ -359,9 +356,9 @@ public class InventoryDBManagementFrame extends JFrame {
 				for (int lineNumber = 0; lineNumber < exportStatements.size(); lineNumber++) {					
 					backupWriter.write(exportStatements.get(lineNumber) + "\n");
 					
-					// Calculate percentage of data written assuming 10% completed during
+					// Calculate percentage of data written assuming 50% completed during
 					// database sql statement generation
-					double writtenPercentage = (((((float)lineNumber + 1) / ((float)exportStatements.size())) * 0.9) + 0.1) * 100.0;
+					double writtenPercentage = (((((float)lineNumber + 1) / ((float)exportStatements.size())) * 0.5) + 0.5) * 100.0;
 					updateProgressBar((int) writtenPercentage, true);
 				}
 			} catch (IOException exception) {
@@ -377,63 +374,109 @@ public class InventoryDBManagementFrame extends JFrame {
 		setEnableControls(true);		
 	}
 	
+	
+	/**
+	 * Counts the total number of lines within an import file (to be 
+	 * used for the progress bar import progress)
+	 * 
+	 * @param importFile A file containing lines of SQL statements
+	 * @return Total number of lines in a file
+	 * @throws IOException If an error occurs while reading the importFile
+	 */
+	private int countImportFileLines(File importFile) throws IOException {
+		int lineCount = 0;
+		try (FileReader fileReader = new FileReader(importFile);
+			 BufferedReader dataReader = new BufferedReader(fileReader)) {
+			while (dataReader.readLine() != null) lineCount++;			
+		}
+		
+		return lineCount;
+	}
+	
 	/**
 	 * Performs database import from SQL file
 	 * 
 	 * @param importFile A file to load SQL statements from
 	 */
 	private void importDatabase(File importFile) {
-		// TODO: Prompt warning before import
+		int response = JOptionPane.showConfirmDialog(this, 
+				"You are about to perform an irreversible operation.\nYou should ensure you have a backup "
+				+ "before continuing with this operation.\n\nDo you wish to continue?", 
+				"Database Import Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 		
-		// Adjust controls 
-		updateProgressBar(0, false);
-		setEnableControls(false);
-		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		
-		// TODO: Calculate how many lines are in the file to update the progress bar
-		//       based on that line imported (90% from lines)
-		
-		// Load data from file ignoring blank lines
-		ArrayList<String> importStatements = new ArrayList<String>();
-		try (FileReader fileReader = new FileReader(importFile);
-			 BufferedReader dataReader = new BufferedReader(fileReader)) {
-			// TODO: Check if truncate enables and if not ignore drop and
-			//       create statements
-			String sqlStatement = null;
-			while ((sqlStatement = dataReader.readLine()) != null) {				
-				if (sqlStatement.trim().length() > 0) {
-					importStatements.add(sqlStatement);
+		if (response == JOptionPane.YES_OPTION) {
+			// Adjust controls 
+			updateProgressBar(0, false);
+			setEnableControls(false);
+			setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			
+			// Truncate the database if requested
+			boolean dropTablesFailed = false;
+			if (overwriteDatabase.isSelected()) {
+				try {
+					SQLiteDBManager.getManager().dropAllTables();
+				} catch (SQLException | IOException exception) {
+					dropTablesFailed = true;
+					JOptionPane.showMessageDialog(null, 
+						String.format("An error occured while reading backup data from %s (Reason: %s)", 
+								importFile.getAbsolutePath(), exception.getMessage()), 
+						"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
 				}
 			}
-		} catch (IOException exception) {
-			JOptionPane.showMessageDialog(null, 
-				String.format("An error occured while reading backup data from %s (Reason: %s)", 
-						importFile.getAbsolutePath(), exception.getMessage()), 
-				"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-		}
-		
-		// Import data into database
-		if (importStatements.size() > 0) {
-			try {
-				SQLiteDBManager.getManager().importDatabase(importStatements);
-				updateProgressBar(100, false);
-			} catch (SQLException | IOException exception) {
-				JOptionPane.showMessageDialog(null, 
-					String.format("An error occurred while importing database. Contact your system adminsitrator for assistance. This application will now exit. (Reason: %s)", exception.getMessage()), 
-					"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-				System.exit(1);
+			
+			if (!dropTablesFailed) {
+				// Load data from file ignoring blank lines
+				ArrayList<String> importStatements = new ArrayList<String>();
+				try (FileReader fileReader = new FileReader(importFile);
+					 BufferedReader dataReader = new BufferedReader(fileReader)) {
+					int totalLines = countImportFileLines(importFile);
+					int currentLine = 0;
+					String sqlStatement = null;
+					while ((sqlStatement = dataReader.readLine()) != null) {				
+						if (sqlStatement.trim().length() > 0) {
+							importStatements.add(sqlStatement);
+						}
+						
+						// Calculate percentage completed
+						currentLine++;
+						int readPercentage = (int) (((((float)currentLine) / ((float)totalLines)) * 0.5) * 100.0);
+						updateProgressBar(readPercentage, false);
+					}
+				} catch (IOException exception) {
+					JOptionPane.showMessageDialog(null, 
+						String.format("An error occured while reading backup data from %s (Reason: %s)", 
+								importFile.getAbsolutePath(), exception.getMessage()), 
+						"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+				}
+				
+				// Import data into database
+				if (importStatements.size() > 0) {
+					try {
+						SQLiteDBManager.getManager().importDatabase(importStatements);
+						updateProgressBar(100, false);
+						
+						// Close application to apply changes
+						JOptionPane.showMessageDialog(null, "Import process completed. The application must restart to apply changes. "
+								+ "This application will now exit.", "Import completed", 
+								JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+						System.exit(0);
+					} catch (SQLException | IOException exception) {
+						JOptionPane.showMessageDialog(null, 
+							String.format("An error occurred while importing database. Contact your system adminsitrator for assistance. This application will now exit. (Reason: %s)", exception.getMessage()), 
+							"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+						System.exit(1);
+					}
+				} else {
+					JOptionPane.showMessageDialog(null, 
+						"Backup file contained no data. Import aborted.", 
+						"Import aborted", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
+				}											
 			}
+			
+			// Restore window functionality
+			setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			setEnableControls(true);
 		}
-		
-		// Restore window functionality
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setEnableControls(true);
-		
-		// Close application to apply changes
-		JOptionPane.showMessageDialog(null, "Import process completed. The application must restart to apply changes. "
-				+ "This application will now exit.", "Import completed", 
-				JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-		System.exit(0);
 	}
 	
 	/**

@@ -13,9 +13,7 @@
  */
 package com.ryorke.database;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 
 import java.sql.Connection;
@@ -109,19 +107,25 @@ public class SQLiteDBManager {
 					case Types.INTEGER:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+					case Types.REAL:
 						Object objectRecord = records.getObject(columnIndex);
-						if (objectRecord == null)
+						if (objectRecord == null) {
 							columnValues.add("null");
-						else
+						} else {						
+							// Convert data type to Java Class (implicitly)
+							// and convert to string
 							columnValues.add(objectRecord.toString());
+						}
 						break;
 					case Types.VARCHAR:
 					case Types.NVARCHAR:
 						String stringRecord = records.getString(columnIndex);
-						if (stringRecord == null)
+						if (stringRecord == null) {
 							columnValues.add("null");
-						else
-							columnValues.add(String.format("'%s'", stringRecord));
+						} else {
+							// Escape single quotes (if present)
+							columnValues.add(String.format("'%s'", stringRecord.replaceAll("'", "''")));
+						}
 						break;
 					default:
 						// Throw an error as we should never hit this spot
@@ -240,19 +244,49 @@ public class SQLiteDBManager {
 	 *  Note 1: This file purposefully disables foreign key constraints during import
 	 *          to avoid import ordering errors.        
 	 * 
-	 * Note 2:  No error checking is performed on statements.
+	 *  Note 2:  No error checking is performed on statements.
 	 * 
 	 * @param sqlStatements A list of statements to execute. 
 	 * @throws SQLException When a database error occurs. 
 	 */
 	public void importDatabase(ArrayList<String> sqlStatements) throws SQLException, IOException {
-		// TODO: Remove importTable() interface and methods from DB managers
 		try (Connection dbConnection = databaseManager.getConnection(false);
 			 Statement sqlStatement = dbConnection.createStatement()) {
 			for (String statement : sqlStatements) {
 				sqlStatement.execute(statement);
 			}
 		}
+	}
+	
+	/**
+	 * Drops all tables within the database
+	 * 
+	 * @throws SQLException If an error occurs while accessing the database
+	 */
+	public void dropAllTables() throws SQLException {
+		ArrayList<String> tableNames = new ArrayList<String>();
+		try (Connection dbConnection = databaseManager.getConnection(false)) {
+			// Create a list of tables and then close the results
+			DatabaseMetaData dbMetadata = dbConnection.getMetaData();
+			String[] types = {"TABLE"};
+			ResultSet tables = dbMetadata.getTables(null, null, "%", types);			
+			while (tables.next()) {
+				String tableName = tables.getString("TABLE_NAME");
+				tableNames.add(tableName);
+			}			
+			tables.close();
+			
+			// Drop the tables, database metadata must be closed as it 
+			// creates a lock on the tables and prevents them from being 
+			// dropped. 
+			for (String tableName : tableNames) {
+				Statement dropTable = dbConnection.createStatement();
+				dropTable.execute("DROP TABLE " + tableName);
+				dropTable.close();
+			}
+		}
+		
+		
 	}
 }
 

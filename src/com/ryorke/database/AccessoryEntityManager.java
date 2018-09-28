@@ -34,6 +34,14 @@ public class AccessoryEntityManager implements EntityManager {
 	private static AccessoryEntityManager entityManager = null;
 	private static ItemEntityManager itemEntityManager = null;
 	private SQLiteDBManager databaseManager = null;
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS accessory "
+			+ "(accessoryId INTEGER UNIQUE NOT NULL, "	// accessoryId = itemId or foreign key
+			+ "color TEXT NOT NULL, "
+			+ "consoleId INTEGER NOT NULL, "	// An id to an existing console
+			+ "modelNumber TEXT NOT NULL,"
+			+ "FOREIGN KEY(accessoryId) REFERENCES item(itemId) ON DELETE RESTRICT,"
+			+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
+	private static final String TABLE_NAME = "accessory";
 	
 	/** 
 	 * Provides access to the singleton accessory entity manager
@@ -73,18 +81,10 @@ public class AccessoryEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createTableQuery = "CREATE TABLE IF NOT EXISTS accessory "
-				+ "(accessoryId INTEGER UNIQUE NOT NULL, "	// accessoryId = itemId or foreign key
-				+ "color TEXT NOT NULL, "
-				+ "consoleId INTEGER NOT NULL, "	// An id to an existing console
-				+ "modelNumber TEXT NOT NULL,"
-				+ "FOREIGN KEY(accessoryId) REFERENCES item(itemId) ON DELETE RESTRICT,"
-				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
-		
 		if (!databaseManager.tableExists("accessory")) {
 			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createTableQuery);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}
 	}
@@ -204,8 +204,16 @@ public class AccessoryEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", AccessoryEntityManager.TABLE_NAME));
+		exportSQLResults.add(AccessoryEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(AccessoryEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

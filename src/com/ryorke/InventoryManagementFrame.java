@@ -444,7 +444,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(InventoryManagementFrame.this, 
-						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.3", 
+						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.4", 
 						"About", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
