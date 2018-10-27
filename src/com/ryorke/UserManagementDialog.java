@@ -587,7 +587,7 @@ public class UserManagementDialog extends JDialog {
 		String message = "";		
 		
 		if (selectedRow > -1) {
-			message = String.format("Are you sure you want to delete the \"%s\"?", userTableModel.getUser(selectedRow).getUsername());			
+			message = String.format("Are you sure you want to delete \"%s\"?", userTableModel.getUser(selectedRow).getUsername());			
 			
 			int response = JOptionPane.showConfirmDialog(this, message, "Delete user?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (response == JOptionPane.YES_OPTION) {
