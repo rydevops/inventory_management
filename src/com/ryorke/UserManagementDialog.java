@@ -501,7 +501,7 @@ public class UserManagementDialog extends JDialog {
 				user = new User(username, password, firstName, lastName, isAdministrator);
 				userTableModel.addUser(user);
 			} else {
-				int selectedRow = userTable.getSelectedRow();				
+				int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow());				
 				User modifiedUser = userTableModel.getUser(selectedRow).clone();
 				modifiedUser.setUsername(this.username.getText());
 				modifiedUser.setFirstName(this.firstName.getText());
@@ -539,7 +539,7 @@ public class UserManagementDialog extends JDialog {
 	 * the fill data in these fields are ignored. 
 	 */
 	private void editUser() {
-		int selectedRow = userTable.getSelectedRow(); 
+		int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow()); 
 		if (selectedRow > -1) {
 			User selectedUser = userTableModel.getUser(selectedRow);		
 			
@@ -583,11 +583,11 @@ public class UserManagementDialog extends JDialog {
 	 * Deletes the selected user after confirming this operation
 	 */
 	private void deleteUser() {
-		int selectedRow = userTable.getSelectedRow();
+		int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow());
 		String message = "";		
 		
 		if (selectedRow > -1) {
-			message = "Are you sure you want to delete the selected user?";			
+			message = String.format("Are you sure you want to delete the \"%s\"?", userTableModel.getUser(selectedRow).getUsername());			
 			
 			int response = JOptionPane.showConfirmDialog(this, message, "Delete user?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (response == JOptionPane.YES_OPTION) {
