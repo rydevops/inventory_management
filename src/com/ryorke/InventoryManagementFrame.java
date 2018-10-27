@@ -31,8 +31,8 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
-
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -43,6 +43,7 @@ import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableRowSorter;
 
 import com.ryorke.database.AccessoryEntityManager;
 import com.ryorke.database.ConsoleEntityManager;
@@ -226,7 +227,9 @@ public class InventoryManagementFrame extends JFrame {
 	 * Shows the edit item dialog based on the selected item. 
 	 */
 	private void showEditItemDialog() {
-		int selectedRow = inventoryTable.getSelectedRow();	
+		// Get the model data row (convert the view row to the model)
+		int selectedRow = inventoryTable.getSelectedRow();		
+		selectedRow = inventoryTable.convertRowIndexToModel(selectedRow);
 		if (selectedRow > -1) {
 			ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
 			editor.setVisible(true);
@@ -284,8 +287,9 @@ public class InventoryManagementFrame extends JFrame {
 			System.exit(1);
 		}
 		
-		inventoryTable = new JTable(inventoryTableModel);
-		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);	
+		inventoryTable = new JTable(inventoryTableModel);		
+		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		inventoryTable.setRowSorter(inventoryTableModel.getTableSorter());
 		inventoryTable.addMouseListener(new MouseListener() {
 
 			/**
@@ -327,6 +331,7 @@ public class InventoryManagementFrame extends JFrame {
 			public void mouseEntered(MouseEvent e) {}
 			
 		});
+		
 		
 		JScrollPane tableScroller = new JScrollPane(inventoryTable);
 		
@@ -549,20 +554,22 @@ public class InventoryManagementFrame extends JFrame {
 	 */
 	public void deleteSelectedItem() {
 		int selectedItemIndex = inventoryTable.getSelectedRow();
+		selectedItemIndex = inventoryTable.convertRowIndexToModel(selectedItemIndex);
 		String message;
 		String title;
 		int options;
+		Item selectedItem; 
 		
 		if (selectedItemIndex >= 0) {
-			message = "About to delete selected item. Are you sure?";
+			selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+			message = String.format("About to delete \"%s\" item. Are you sure?", selectedItem.getProductName());
 			title = "Delete item?";
 			options = JOptionPane.YES_NO_OPTION;
 			
 			int response = JOptionPane.showConfirmDialog(this, message, title, options);
 			
 			if (response == JOptionPane.YES_OPTION) {
-				try {
-					Item selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+				try {					
 					boolean performDelete = true;
 					
 					if (selectedItem instanceof Game && gameIncludedWithConsole((Game)selectedItem)) {
@@ -670,6 +677,8 @@ public class InventoryManagementFrame extends JFrame {
 		private AccessoryEntityManager accessoryManager;
 		private GameEntityManager gameManager;
 		
+		private TableRowSorter<InventoryTableModel> tableSorter;
+		
 		/**
 		 * Populates the table inventory from the database
 		 * 
@@ -693,6 +702,57 @@ public class InventoryManagementFrame extends JFrame {
 			ArrayList<Game> games = gameManager.getGames();
 			if (games != null)
 				inventoriedItems.addAll(games);
+			
+			// Attach table sorter
+			setupTableSorter();
+		}
+		
+		/**
+		 * Creates a default TableRowSorter and then overrides
+		 * a select handful of columns that do not have comparator
+		 * implementations available. This will provide the custom
+		 * comparator actions to ensure sort order is valid.
+		 * 
+		 * NOTE: Due to the formatters displaying text custom implementations
+		 * are required to convert the data back into its raw format. 
+		 */
+		private void setupTableSorter() {
+			tableSorter = new TableRowSorter<>(this);
+			
+			// Converts units in to a number for sorting
+			tableSorter.setComparator(ITEM_UNITS_IN_STOCK, new Comparator<String>() {
+				@Override
+				public int compare(String unitsInStockString1, String unitsInStockString2) {
+					String removeCharacters = "[$,]";
+					Integer unitsInStock1 = new Integer(unitsInStockString1.replaceAll(removeCharacters, ""));
+					Integer unitsInStock2 = new Integer(unitsInStockString2.replaceAll(removeCharacters, ""));
+
+					return unitsInStock1.compareTo(unitsInStock2);
+				}				
+			});
+			
+			
+			// Sorts unit costs. 
+			tableSorter.setComparator(ITEM_UNIT_COST, new Comparator<String>() {
+				@Override
+				public int compare(String unitsCostString1, String unitsCostString2) {
+					String removeCharacters = "[$,]";
+					Double unitsCost1 = new Double(unitsCostString1.replaceAll(removeCharacters, ""));
+					Double unitsCost2 = new Double(unitsCostString2.replaceAll(removeCharacters, ""));
+
+					return unitsCost1.compareTo(unitsCost2);
+				}				
+			});
+			
+		}
+		
+		/**
+		 * Returns the table sorter being used on this model
+		 * 
+		 * @return A table sorter
+		 */
+		public TableRowSorter<InventoryTableModel> getTableSorter() {
+			return tableSorter;
 		}
 		
 		/**
@@ -827,6 +887,23 @@ public class InventoryManagementFrame extends JFrame {
 		@Override
 		public String getColumnName(int columnIndex) {			
 			return header[columnIndex];
+		}
+		
+		/**
+		 * Returns the class type for each column to enable sorting
+		 * of columns within the table. 
+		 * 
+		 * @param columnIndex The column index being sorted
+		 * @return A class type to be used in sorting
+		 */
+		@Override
+		public Class<?> getColumnClass(int columnIndex) {
+			Class<?> result = Object.class; 
+			if (!inventoriedItems.isEmpty()) {			
+				result = getValueAt(0, columnIndex).getClass();
+			}
+			
+			return result;
 		}
 		
 	}

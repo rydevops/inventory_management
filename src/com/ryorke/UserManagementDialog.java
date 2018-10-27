@@ -259,6 +259,7 @@ public class UserManagementDialog extends JDialog {
 	 */
 	private void createUserTable(Container contentPane) {
 		userTable = new JTable(userTableModel);
+		userTable.setAutoCreateRowSorter(true);  // Default sorter works for our use case
 		userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		JScrollPane userTableScrollView = new JScrollPane(userTable);		
 		contentPane.add(userTableScrollView, BorderLayout.CENTER);
@@ -782,6 +783,23 @@ public class UserManagementDialog extends JDialog {
 				// It should not be possible to reach this statement. If this occurs, 
 				// it means a new column has been added that hasn't been accounted for. 
 				assert (columnIndex < FIELD_USERNAME || columnIndex > FIELD_ADMINISTRATOR): "Invalid column index requested in UserTableModel";	
+			}
+			
+			return result;
+		}
+		
+		/**
+		 * Returns the class type for each column to enable sorting
+		 * of columns within the table. 
+		 * 
+		 * @param columnIndex The column index being sorted
+		 * @return A class type to be used in sorting
+		 */
+		@Override
+		public Class<?> getColumnClass(int columnIndex) {
+			Class<?> result = Object.class; 
+			if (!users.isEmpty()) {			
+				result = getValueAt(0, columnIndex).getClass();
 			}
 			
 			return result;
