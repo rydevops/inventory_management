@@ -33,6 +33,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.regex.PatternSyntaxException;
+
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -44,6 +46,7 @@ import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.RowFilter;
 
 import com.ryorke.database.AccessoryEntityManager;
 import com.ryorke.database.ConsoleEntityManager;
@@ -77,6 +80,7 @@ public class InventoryManagementFrame extends JFrame {
 
 	private JTextField filterInventoryQuery;
 	private JButton filter;
+	private JButton filterClear;
 	private JButton addInventoryItem;
 	private JButton editInventoryItem;
 	private JButton deleteInventoryItem;
@@ -105,12 +109,14 @@ public class InventoryManagementFrame extends JFrame {
 		
 		JMenuBar mainMenu = createMainMenu(); 
 		setJMenuBar(mainMenu);		
-		
-	    JPanel filterControls = createFilterControls();
-	    contentPane.add(filterControls, BorderLayout.NORTH);
-	    
+			    
 	    JScrollPane inventoryView = createInventoryTable();
 	    contentPane.add(inventoryView, BorderLayout.CENTER);
+	    
+	    // Requires this ordering as this creates an event listener
+	    // based on data from the inventoryView
+	    JPanel filterControls = createFilterControls();
+	    contentPane.add(filterControls, BorderLayout.NORTH);
 	    
 	    JPanel inventoryButtons = createInventoryButtons();
 	    contentPane.add(inventoryButtons, BorderLayout.SOUTH);
@@ -474,7 +480,26 @@ public class InventoryManagementFrame extends JFrame {
 		
 		JLabel filterLabel = new JLabel("Filter Query:");
 		filterInventoryQuery = new JTextField();
+		filterInventoryQuery.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				applyFilter();				
+			}
+		});
 		filter = new JButton("Filter");
+		filter.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				applyFilter();
+			}
+		});
+		filterClear = new JButton("Clear Filter");
+		filterClear.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				inventoryTableModel.getTableSorter().setRowFilter(null);				
+			}
+		});
 		
 		filterLabel.setLabelFor(filterInventoryQuery);
 		filterLabel.setDisplayedMnemonic(KeyEvent.VK_I);
@@ -482,11 +507,38 @@ public class InventoryManagementFrame extends JFrame {
 		
 		filterPanel.add(filterLabel, BorderLayout.WEST);
 		filterPanel.add(filterInventoryQuery, BorderLayout.CENTER);
-		filterPanel.add(filter, BorderLayout.EAST);
+		JPanel buttonContainer = new JPanel(new GridLayout(1, 2));
+		buttonContainer.add(filter);
+		buttonContainer.add(filterClear);
+		filterPanel.add(buttonContainer, BorderLayout.EAST);
 		
 		return filterPanel;		
 	}
 	
+	/**
+	 * Filters the table by applying applying the regex against
+	 * the item name and/or description columns. 
+	 */
+	private void applyFilter() {
+		String filterExpression = filterInventoryQuery.getText();
+		
+		if (filterExpression.length() > 0) {
+			TableRowSorter<InventoryTableModel> sorter = inventoryTableModel.getTableSorter();
+			 
+			
+			try {
+				RowFilter<InventoryTableModel, Integer> appliedFilter = RowFilter.regexFilter(filterExpression, 
+					InventoryTableModel.ITEM_DESCRIPTION, InventoryTableModel.ITEM_NAME);
+				sorter.setRowFilter(appliedFilter);
+			} catch (PatternSyntaxException syntaxError) {
+				JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Invalid filter provided", "Filter error", 
+						JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+			}
+		} else {
+			JOptionPane.showMessageDialog(InventoryManagementFrame.this, "No filter provide.", "Invalid filter",
+					JOptionPane.OK_OPTION|JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
 	/**
 	 * Creates a set of buttons for modifying a selected
 	 * inventory item
