@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
@@ -36,6 +37,8 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import org.sqlite.SQLiteJDBCLoader;
 
 import com.ryorke.database.SQLiteDBManager;
 
@@ -375,23 +378,7 @@ public class InventoryDBManagementFrame extends JFrame {
 	}
 	
 	
-	/**
-	 * Counts the total number of lines within an import file (to be 
-	 * used for the progress bar import progress)
-	 * 
-	 * @param importFile A file containing lines of SQL statements
-	 * @return Total number of lines in a file
-	 * @throws IOException If an error occurs while reading the importFile
-	 */
-	private int countImportFileLines(File importFile) throws IOException {
-		int lineCount = 0;
-		try (FileReader fileReader = new FileReader(importFile);
-			 BufferedReader dataReader = new BufferedReader(fileReader)) {
-			while (dataReader.readLine() != null) lineCount++;			
-		}
-		
-		return lineCount;
-	}
+	
 	
 	/**
 	 * Performs database import from SQL file
@@ -410,73 +397,58 @@ public class InventoryDBManagementFrame extends JFrame {
 			setEnableControls(false);
 			setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 			
-			// Truncate the database if requested
-			boolean dropTablesFailed = false;
-			if (overwriteDatabase.isSelected()) {
-				try {
-					SQLiteDBManager.getManager().dropAllTables();
-				} catch (SQLException | IOException exception) {
-					dropTablesFailed = true;
-					JOptionPane.showMessageDialog(null, 
-						String.format("An error occured while reading backup data from %s (Reason: %s)", 
-								importFile.getAbsolutePath(), exception.getMessage()), 
-						"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-				}
-			}
-			
-			if (!dropTablesFailed) {
-				// Load data from file ignoring blank lines
-				ArrayList<String> importStatements = new ArrayList<String>();
-				try (FileReader fileReader = new FileReader(importFile);
-					 BufferedReader dataReader = new BufferedReader(fileReader)) {
-					int totalLines = countImportFileLines(importFile);
-					int currentLine = 0;
-					String sqlStatement = null;
-					while ((sqlStatement = dataReader.readLine()) != null) {				
-						if (sqlStatement.trim().length() > 0) {
-							importStatements.add(sqlStatement);
-						}
-						
-						// Calculate percentage completed
-						currentLine++;
-						int readPercentage = (int) (((((float)currentLine) / ((float)totalLines)) * 0.5) * 100.0);
-						updateProgressBar(readPercentage, false);
-					}
-				} catch (IOException exception) {
-					JOptionPane.showMessageDialog(null, 
-						String.format("An error occured while reading backup data from %s (Reason: %s)", 
-								importFile.getAbsolutePath(), exception.getMessage()), 
-						"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-				}
-				
-				// Import data into database
-				if (importStatements.size() > 0) {
-					try {
-						SQLiteDBManager.getManager().importDatabase(importStatements);
-						updateProgressBar(100, false);
-						
-						// Close application to apply changes
-						JOptionPane.showMessageDialog(null, "Import process completed. The application must restart to apply changes. "
-								+ "This application will now exit.", "Import completed", 
-								JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-						System.exit(0);
-					} catch (SQLException | IOException exception) {
-						JOptionPane.showMessageDialog(null, 
-							String.format("An error occurred while importing database. Contact your system adminsitrator for assistance. This application will now exit. (Reason: %s)", exception.getMessage()), 
-							"Import failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-						System.exit(1);
-					}
-				} else {
-					JOptionPane.showMessageDialog(null, 
-						"Backup file contained no data. Import aborted.", 
-						"Import aborted", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
-				}											
-			}
-			
-			// Restore window functionality
-			setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			setEnableControls(true);
+			// Perform database import within a separate thread.  
+			ImportRunner importer = new ImportRunner(overwriteDatabase.isSelected(), importFile, 
+					progressBar, this);
+			Thread importerThread = new Thread(importer);
+			importerThread.start();			
 		}
+	}
+	
+	/**
+	 * Callback function executed once an import operation 
+	 * has completed. Called from the ImportRunner
+	 * 
+	 * @param importer An ImportRunner used to validate the completion status
+	 */
+	public void importCompleted(ImportRunner importer) {
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setEnableControls(true);
+		
+		String message = ""; 
+		String title = "";
+		int dialogOptions = 0;
+		
+		if (importer.dropTablesFailed()) {
+			message = "Failed to drop/truncate database. Contact System Administrators if "
+					+ "problems persist. Now exiting the application.\n\nReason: %s";
+			message = String.format(message, importer.getException().getMessage());
+			title = "Database drop/truncate failed";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+		} else if (importer.databaseErrorOccured()) {
+			message = "A failue occured while importing to the database. Contact System "
+					+ "Administrators if problems persist. Now exiting the application.\n\nReason: %s";
+			message = String.format(message, importer.getException().getMessage());
+			title = "Database import occured failed";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+		} else if (importer.importFileReadErrorOccured()) {
+			message = "Unable to read import file. Contact System "
+					+ "Administrators if problems persist. Now exiting the application.\n\nReason: %s";
+			message = String.format(message, importer.getException().getMessage());
+			title = "Import file unreadable";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+		} else {
+			message = "Import process completed. The application will now exit to apply changes.";
+			title = "Import completed successfully";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE;
+			
+		}
+		
+		JOptionPane.showMessageDialog(this, message, title, dialogOptions);
+		System.exit(0);
 	}
 	
 	/**
@@ -561,6 +533,198 @@ public class InventoryDBManagementFrame extends JFrame {
 		}
 	}
 	
-	
-	
+	/**
+	 * Performs import operations in a separate thread
+	 * to allow the UI to continue processing events. 
+	 * 
+	 * @author Russell Yorke
+	 *
+	 */
+	@SuppressWarnings("unused")
+	private class ImportRunner implements Runnable {
+		private Integer totalOperations = 0;
+		private Integer currentOperation = 0; 
+		private boolean dropTables; 
+		private File importFile;		
+		private JProgressBar progressBar; 		
+		private boolean dropTablesFailed = false; 
+		private boolean databaseErrorOccured = false; 
+		private boolean importFileReadErrorOccured = false; 
+		private Exception exceptionCaught = null; 
+		private InventoryDBManagementFrame owner = null;
+		
+		/**
+		 * Configures a new database import runner
+		 * 
+		 * @param dropTables If true the database tables will be dropped first
+		 * @param importFile A File to import into the database
+		 */
+		public ImportRunner(boolean dropTables, File importFile, JProgressBar progressBar, 
+				InventoryDBManagementFrame owner) {
+			this.dropTables = dropTables;			
+			this.importFile = importFile;
+			this.progressBar = progressBar;
+			this.owner = owner;
+		}
+		
+		/**
+		 * Provides access to an exception if one occured
+		 * 
+		 * @return An exception that occurred during execution
+		 */
+		public Exception getException() {
+			return exceptionCaught;
+		}
+		
+		/** 
+		 * Provides the status of the drop tables operations. When this 
+		 * is true an exception will be set. 
+		 * 
+		 * @return True if dropping tables failed, false otherwise. 
+		 */
+		public boolean dropTablesFailed() {
+			return dropTablesFailed;
+		}
+		
+		/**
+		 * Provides the status of the database import operations. 
+		 * When this is true an exception will be set. 
+		 * 
+		 * @return True if a database error occurred during import, false otherwise. 
+		 */
+		public boolean databaseErrorOccured() {
+			return databaseErrorOccured;
+		}
+		
+		/**
+		 * Provides the status of the file reading operations for the import file. 
+		 * When this is true an exception will be set. 
+		 * 
+		 * @return True if a file read operation failed, false otherwise. 
+		 */
+		public boolean importFileReadErrorOccured() {
+			return importFileReadErrorOccured;
+		}
+		
+		/**
+		 * The total number of operations required to complete
+		 * this execution. 
+		 * @return The total number of operations to complete execution
+		 */
+		public Integer getTotalOperations() {
+			return totalOperations;
+		}
+		
+		/**
+		 * Returns the current operation number completed
+		 * so far. 
+		 * 
+		 * @return An Integer representing the current operation completed. 
+		 */
+		public Integer getCurrentOperation() {
+			return currentOperation;
+		}
+		
+		/**
+		 * Performs a database import operations when called. 
+		 * This will updated the current operation as well as the
+		 * total number of operations within this process. 
+		 */
+		@Override
+		public void run() {
+			// Truncate tables if requested
+			if (dropTables) {
+				try {
+					SQLiteDBManager.getManager().dropAllTables();
+				} catch (SQLException | IOException exception) {
+					dropTablesFailed = true;
+					exceptionCaught = exception;					
+				}
+			}
+
+			// Import data
+			if (!dropTablesFailed) {
+				try (FileReader fileReader = new FileReader(importFile);
+					 BufferedReader dataReader = new BufferedReader(fileReader)) {
+					
+					// Intaialization metadata about import
+					totalOperations = countImportFileLines(importFile) * 2;
+
+					
+					// Read the data and import it into the database
+					// incrementing the number of completed operations between each stage
+					try (Connection dbConnection = SQLiteDBManager.getManager().getConnection(false)) {
+						String sqlStatement = null;
+						try {
+							 sqlStatement = dataReader.readLine();
+						} catch (IOException exception) {
+							importFileReadErrorOccured = true;
+							exceptionCaught = exception;
+						}
+						
+						while (sqlStatement != null) {
+							currentOperation++;
+							updateProgressBar();
+							
+							if (sqlStatement.trim().length() > 0) {
+								SQLiteDBManager.getManager().executeRawStatement(dbConnection, 
+										sqlStatement);
+							}
+							currentOperation++;
+							updateProgressBar();
+							
+							try {
+								 sqlStatement = dataReader.readLine();
+							} catch (IOException exception) {
+								importFileReadErrorOccured = true;
+								exceptionCaught = exception;
+								break; 
+							}
+						}						
+					} catch (SQLException | IOException exception) {
+						databaseErrorOccured = true;
+						exceptionCaught = exception;
+					}
+				} catch (IOException exception) {
+					importFileReadErrorOccured = true;
+					exceptionCaught = exception;
+				}										
+			}
+			
+			owner.importCompleted(this);
+		}
+		
+		/**
+		 * Counts the total number of lines within an import file (to be 
+		 * used for the progress bar import progress)
+		 * 
+		 * @param importFile A file containing lines of SQL statements
+		 * @return Total number of lines in a file
+		 * @throws IOException If an error occurs while reading the importFile
+		 */
+		private int countImportFileLines(File importFile) throws IOException {
+			int lineCount = 0;
+			try (FileReader fileReader = new FileReader(importFile);
+				 BufferedReader dataReader = new BufferedReader(fileReader)) {
+				while (dataReader.readLine() != null) lineCount++;			
+			}
+			
+			return lineCount;
+		}
+		
+		/**
+		 * Updates a progress bar including the text to display on it. 
+		 * 
+		 * @param currentValue A value between 0 and 100 to adjust the progress bar
+		 * @param exporting If true "% Exported" will be displayed, otherwise "% Imported" will be displayed. 
+		 */
+		private void updateProgressBar() {
+			int completed = (int) (((float)currentOperation) / ((float)totalOperations) * 100.0F);
+			String progressStatusMessage = String.format("%d of %d (%d%%) import operations completed", currentOperation / 2, totalOperations / 2, completed);
+			progressBar.setValue(completed);
+			progressBar.setString(progressStatusMessage);
+			progressBar.setVisible(true);
+			progressBar.setStringPainted(true);
+		}
+	}
 }

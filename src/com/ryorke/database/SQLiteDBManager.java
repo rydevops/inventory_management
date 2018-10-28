@@ -238,24 +238,17 @@ public class SQLiteDBManager {
 		
 		return sqlStatements;
 	}
-	
+		
 	/**
-	 * Imports an SQL database file into the database.
+	 * Executes an SQL statement using an existing connection
 	 * 
-	 *  Note 1: This file purposefully disables foreign key constraints during import
-	 *          to avoid import ordering errors.        
-	 * 
-	 *  Note 2:  No error checking is performed on statements.
-	 * 
-	 * @param sqlStatements A list of statements to execute. 
-	 * @throws SQLException When a database error occurs. 
+	 * @param existingConnection An existing database connection
+	 * @param rawStatement  An SQL statement to execute
+	 * @throws SQLException If an SQL error occurs. 
 	 */
-	public void importDatabase(ArrayList<String> sqlStatements) throws SQLException, IOException {
-		try (Connection dbConnection = databaseManager.getConnection(false);
-			 Statement sqlStatement = dbConnection.createStatement()) {
-			for (String statement : sqlStatements) {
-				sqlStatement.execute(statement);
-			}
+	public void executeRawStatement(Connection existingConnection, String rawStatement) throws SQLException {
+		try (Statement sqlStatement = existingConnection.createStatement()) {
+			sqlStatement.execute(rawStatement);
 		}
 	}
 	
