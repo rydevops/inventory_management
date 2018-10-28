@@ -401,7 +401,7 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new InventoryDBManagementFrame();
+				new InventoryDBManagementFrame(InventoryManagementFrame.this).setVisible(true);
 			}
 			
 		});
@@ -455,7 +455,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(InventoryManagementFrame.this, 
-						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.4", 
+						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.5", 
 						"About", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
@@ -687,6 +687,7 @@ public class InventoryManagementFrame extends JFrame {
 	 */
 	private void logout() {
 		new AuthenticationFrame();
+		
 		closeWindow(false);
 	}
 	

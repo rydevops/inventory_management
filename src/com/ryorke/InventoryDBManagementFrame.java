@@ -16,6 +16,7 @@ package com.ryorke;
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -38,8 +39,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import org.sqlite.SQLiteJDBCLoader;
-
 import com.ryorke.database.SQLiteDBManager;
 
 import javax.swing.JLabel;
@@ -48,6 +47,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JCheckBox;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
@@ -60,7 +60,7 @@ import javax.swing.JFrame;
  *
  */
 @SuppressWarnings("serial")
-public class InventoryDBManagementFrame extends JFrame {
+public class InventoryDBManagementFrame extends JDialog {
 	public final static String WINDOW_TITLE = "Database Management";
 	private static File lastDirectoryBrowsed = null;
 	
@@ -77,8 +77,8 @@ public class InventoryDBManagementFrame extends JFrame {
 	 * Creates a new inventory management window with a default
 	 * title and no owner
 	 */
-	public InventoryDBManagementFrame() {
-		this(InventoryDBManagementFrame.WINDOW_TITLE);
+	public InventoryDBManagementFrame(Frame owner) {
+		this(owner, InventoryDBManagementFrame.WINDOW_TITLE);
 	}
 
 	
@@ -86,9 +86,11 @@ public class InventoryDBManagementFrame extends JFrame {
 	 * Create a new inventory DB management window with the specified
 	 * title as a modal dialog
 	 * 
+	 * @param owner The owner of this dialog
 	 * @param title Window title
 	 */
-	public InventoryDBManagementFrame(String title) {
+	public InventoryDBManagementFrame(Frame owner, String title) {
+		super(owner, title, true);
 		Container contentPane = getContentPane();
 		((JPanel)contentPane).setBorder(BorderFactory.createLineBorder(contentPane.getBackground(), 5));
 		
@@ -104,9 +106,7 @@ public class InventoryDBManagementFrame extends JFrame {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		pack();
 		setLocationRelativeTo(null);
-		setTitle(title);
 		setResizable(false);
-		setVisible(true);		
 	}
 	
 	/**
