@@ -355,7 +355,6 @@ public class AccessoryPanel extends JPanel implements ItemEditor {
 		try {
 			Integer platformId = Integer.parseInt(this.platformId.getText());
 			if (platformId > 0 && consoleManager.isConsoleId(platformId)) {
-				// TODO: Perform check that platformId exists				
 				item.setPlatformId(platformId);
 				
 				// Clear the error (if set)

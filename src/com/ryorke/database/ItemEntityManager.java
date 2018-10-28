@@ -37,7 +37,21 @@ import com.ryorke.entity.PackageDimension;
 public class ItemEntityManager implements EntityManager {
 	private static ItemEntityManager entityManager = null;
 	private SQLiteDBManager databaseManager = null;
-	private ManufactureEntityManager manufactureManager = null; 
+	private ManufactureEntityManager manufactureManager = null;
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS item "
+			+ "(itemId INTEGER PRIMARY KEY, "
+			+ "name TEXT UNIQUE NOT NULL, "
+			+ "description TEXT NOT NULL, "
+			+ "manufactureId INTEGER NOT NULL, " //FOREIGN KEY
+			+ "releaseDate TEXT NOT NULL, " // Converted to text string
+			+ "unitCost REAL DEFAULT 0.00 NOT NULL, "
+			+ "unitsInStock INTEGER DEFAULT 0 NOT NULL, "
+			+ "width REAL DEFAULT 0.000 NOT NULL, "
+			+ "height REAL DEFAULT 0.000 NOT NULL, "
+			+ "depth REAL DEFAULT 0.000 NOT NULL, "
+			+ "weight REAL DEFAULT 0.000 NOT NULL,"
+			+ "FOREIGN KEY(manufactureId) REFERENCES manufacture(manufactureId) ON DELETE RESTRICT)"; 
+	private static final String TABLE_NAME = "item";
 	
 	/** 
 	 * Provides access to the singleton item entity manager
@@ -75,24 +89,10 @@ public class ItemEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createItemTable = "CREATE TABLE IF NOT EXISTS item "
-				+ "(itemId INTEGER PRIMARY KEY, "
-				+ "name TEXT UNIQUE NOT NULL, "
-				+ "description TEXT NOT NULL, "
-				+ "manufactureId INTEGER NOT NULL, " //FOREIGN KEY
-				+ "releaseDate TEXT NOT NULL, " // Converted to text string
-				+ "unitCost REAL DEFAULT 0.00 NOT NULL, "
-				+ "unitsInStock INTEGER DEFAULT 0 NOT NULL, "
-				+ "width REAL DEFAULT 0.000 NOT NULL, "
-				+ "height REAL DEFAULT 0.000 NOT NULL, "
-				+ "depth REAL DEFAULT 0.000 NOT NULL, "
-				+ "weight REAL DEFAULT 0.000 NOT NULL,"
-				+ "FOREIGN KEY(manufactureId) REFERENCES manufacture(manufactureId))";
-		
 		if (!databaseManager.tableExists("item")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createItemTable);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}
 	}
@@ -111,7 +111,7 @@ public class ItemEntityManager implements EntityManager {
 		boolean itemFound = false;
 		
 		if (item != null) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					PreparedStatement statement = dbConnection.prepareStatement(findItemQuery)) {
 				statement.setInt(1, item.getItemNumber());
 				ResultSet queryResult = statement.executeQuery();
@@ -172,7 +172,7 @@ public class ItemEntityManager implements EntityManager {
 		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
 		
 
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertItemStatement = dbConnection.prepareStatement(insertItemQuery)) {
 			insertItemStatement.setString(1, item.getProductName());
 			insertItemStatement.setString(2, item.getProductDescription());
@@ -214,7 +214,7 @@ public class ItemEntityManager implements EntityManager {
 		// that manufacture 
 		Manufacture manufacture = manufactureManager.addManufacture(item.getManufacture());
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateItemStatement = dbConnection.prepareStatement(updateItemQuery)) {
 			updateItemStatement.setString(1, item.getProductName());
 			updateItemStatement.setString(2, item.getProductDescription());
@@ -240,7 +240,7 @@ public class ItemEntityManager implements EntityManager {
 	public void deleteItem(Item item) throws SQLException {
 		final String deleteItemQuery = "DELETE FROM item WHERE itemId = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteItemQuery)) {
 			deleteStatement.setInt(1, item.getItemNumber());			
 			deleteStatement.executeUpdate();
@@ -256,8 +256,16 @@ public class ItemEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", ItemEntityManager.TABLE_NAME));
+		exportSQLResults.add(ItemEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(ItemEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

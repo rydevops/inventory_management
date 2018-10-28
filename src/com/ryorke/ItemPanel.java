@@ -24,6 +24,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -308,8 +309,11 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	public void refreshFields() {
 		SimpleDateFormat dateFormatter = (SimpleDateFormat) SimpleDateFormat.getDateInstance(SimpleDateFormat.SHORT);
 		dateFormatter.applyPattern("YYYY/MM/dd");
-		DecimalFormat dimensionFormat = new DecimalFormat("#,###0.0000");
-		DecimalFormat currencyFormat = new DecimalFormat("#,###0.00");
+		DecimalFormat dimensionFormat = new DecimalFormat("#,##0.00");
+		DecimalFormat unitFormatter = new DecimalFormat("#,##0");
+		unitFormatter.setMaximumFractionDigits(0);
+		NumberFormat currencyFormat = NumberFormat.getCurrencyInstance();
+		currencyFormat.setMaximumFractionDigits(2);
 		
 		if (this.item != null) {
 			// Don't display the item number if this is a new item not yet saved
@@ -319,14 +323,14 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 			
 			productName.setText(item.getProductName());
 			description.setText(item.getProductDescription());
-			unitsInStock.setText(Integer.toString(item.getUnitsInStock()));
+			unitsInStock.setText(unitFormatter.format(item.getUnitsInStock()));
 			unitCost.setText(currencyFormat.format(item.getUnitCost()));
 			manufacture.setSelectedItem(item.getManufacture());
 			releaseDate.setText(dateFormatter.format(item.getReleaseDate()));
 			height.setText(dimensionFormat.format(item.getPackageDimensions().getHeight()));
 			width.setText(dimensionFormat.format(item.getPackageDimensions().getWidth()));
 			depth.setText(dimensionFormat.format(item.getPackageDimensions().getDepth()));
-			weight.setText(dimensionFormat.format(item.getPackageDimensions().getWeight()));
+			weight.setText(dimensionFormat.format(item.getPackageDimensions().getWeight()));			
 		}
 	}
 
@@ -467,11 +471,14 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkUnitsInStock() {
 		boolean isValid = false;
+		DecimalFormat formatter = new DecimalFormat("#,##0");
+		formatter.setMaximumFractionDigits(0);
 		
 		Integer unitsInStock = parseInteger(this.unitsInStock.getText());
 		if(unitsInStock == null) {
-			setFieldStyle(this.unitsInStock, "Units in stock must be 0 or more.", INVALID_INPUT);
+			setFieldStyle(this.unitsInStock, "Units in stock must be 0 or more and a whole number.", INVALID_INPUT);
 		} else {
+			this.unitsInStock.setText(formatter.format(unitsInStock));
 			setFieldStyle(this.unitsInStock, null, Color.WHITE);
 			isValid = true;
 		}
@@ -488,11 +495,14 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkUnitCost() {
 		boolean isValid = false;
+		NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance();
+		currencyFormatter.setMaximumFractionDigits(2);
 		
 		Double unitCost = parseDouble(this.unitCost.getText(), true);
 		if (unitCost == null) {
 			setFieldStyle(this.unitCost, "Unit cost must be $0.00 or more.", INVALID_INPUT);
 		} else {
+			this.unitCost.setText(currencyFormatter.format(unitCost));
 			setFieldStyle(this.unitCost, null, Color.WHITE);
 			isValid = true;
 		}		
@@ -615,12 +625,15 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkWidth() {
 		boolean isValid = false;
+		DecimalFormat formatter = new DecimalFormat("#,##0.00");
+		formatter.setMaximumFractionDigits(2);
 		
 		Float tempFloat = parseFloat(width.getText());
 		
 		if (tempFloat == null) {
 			setFieldStyle(width, "Invalid width. Value must be 0.00 or more.", INVALID_INPUT);
 		} else {
+			width.setText(formatter.format(tempFloat));
 			setFieldStyle(width, null, Color.WHITE);
 			isValid = true;
 		}
@@ -637,12 +650,15 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkHeight() {
 		boolean isValid = false;
+		DecimalFormat formatter = new DecimalFormat("#,##0.00");
+		formatter.setMaximumFractionDigits(2);
 		
 		Float tempFloat = parseFloat(height.getText());
 		
 		if (tempFloat == null) {
 			setFieldStyle(height, "Invalid height. Value must be 0.00 or more.", INVALID_INPUT);
 		} else {
+			height.setText(formatter.format(tempFloat));
 			setFieldStyle(height, null, Color.WHITE);
 			isValid = true;
 		}
@@ -659,12 +675,15 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkWeight() {
 		boolean isValid = false;
+		DecimalFormat formatter = new DecimalFormat("#,##0.00");
+		formatter.setMaximumFractionDigits(2);
 		
 		Float tempFloat = parseFloat(weight.getText());
 		
 		if (tempFloat == null) {
 			setFieldStyle(weight, "Invalid weight. Value must be 0.00 or more.", INVALID_INPUT);
 		} else {
+			weight.setText(formatter.format(tempFloat));
 			setFieldStyle(weight, null, Color.WHITE);
 			isValid = true;
 		}
@@ -681,12 +700,15 @@ public class ItemPanel extends JPanel implements ItemEditor, FocusListener {
 	 */
 	public boolean checkDepth() {
 		boolean isValid = false;
-		
+		DecimalFormat formatter = new DecimalFormat("#,##0.00");
+		formatter.setMaximumFractionDigits(2);
+				
 		Float tempFloat = parseFloat(depth.getText());
 		
 		if (tempFloat == null) {
 			setFieldStyle(depth, "Invalid depth. Value must be 0.00 or more.", INVALID_INPUT);
 		} else {
+			depth.setText(formatter.format(tempFloat));
 			setFieldStyle(depth, null, Color.WHITE);
 			isValid = true;
 		}

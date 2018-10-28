@@ -34,6 +34,15 @@ public class GameEntityManager implements EntityManager {
 	private static GameEntityManager entityManager = null;
 	private static ItemEntityManager itemEntityManager = null;
 	private SQLiteDBManager databaseManager = null;
+	private static final String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS game "
+			+ "(gameId INTEGER UNIQUE NOT NULL, "	// gameId = itemId or foreign key
+			+ "numberOfDiscs INTEGER NOT NULL, "
+			+ "numberOfPlayers INTEGER NOT NULL, "
+			+ "consoleId INTEGER NOT NULL, "
+			+ "esrbRating TEXT NOT NULL,"
+			+ "FOREIGN KEY(gameId) REFERENCES item(itemId) ON DELETE RESTRICT,"
+			+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId) ON DELETE RESTRICT)";
+	private static final String TABLE_NAME = "game";
 	
 	/** 
 	 * Provides access to the singleton game entity manager
@@ -73,19 +82,10 @@ public class GameEntityManager implements EntityManager {
 	 */
 	@Override
 	public void createTable() throws SQLException {
-		final String createTableQuery = "CREATE TABLE IF NOT EXISTS game "
-				+ "(gameId INTEGER UNIQUE NOT NULL, "	// gameId = itemId or foreign key
-				+ "numberOfDiscs INTEGER NOT NULL, "
-				+ "numberOfPlayers INTEGER NOT NULL, "
-				+ "consoleId INTEGER NOT NULL, "
-				+ "esrbRating TEXT NOT NULL,"
-				+ "FOREIGN KEY(gameId) REFERENCES item(itemId),"
-				+ "FOREIGN KEY(consoleId) REFERENCES console(consoleId))";
-		
 		if (!databaseManager.tableExists("game")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createTableQuery);
+				sqlStatement.executeUpdate(CREATE_TABLE_QUERY);
 			}
 		}
 	}
@@ -101,7 +101,7 @@ public class GameEntityManager implements EntityManager {
 		final String getAllGamesQuery = "SELECT * FROM game";
 		ArrayList<Game> games = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				Statement statement = dbConnection.createStatement();
 				ResultSet gamesResult = statement.executeQuery(getAllGamesQuery)) {
 			while (gamesResult.next()) {
@@ -141,7 +141,7 @@ public class GameEntityManager implements EntityManager {
 		final String getGamesByConsoleIdQuery = "SELECT * FROM game WHERE consoleId = ?";
 		ArrayList<Game> games = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement statement = dbConnection.prepareStatement(getGamesByConsoleIdQuery)) {
 			
 			statement.setInt(1, consoleId);
@@ -183,7 +183,7 @@ public class GameEntityManager implements EntityManager {
 		final String getGameByGameIdQuery = "SELECT * FROM game WHERE gameId = ?";
 		Game game = null;
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement statement = dbConnection.prepareStatement(getGameByGameIdQuery)) {
 			
 			statement.setInt(1, gameId);
@@ -222,7 +222,7 @@ public class GameEntityManager implements EntityManager {
 		// Create the associated item record first to acquire a new itemId
 		itemEntityManager.addItem(game);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertStatement = dbConnection.prepareStatement(insertGameQuery)) {
 			insertStatement.setInt(1, game.getItemNumber());
 			insertStatement.setInt(2, game.getNumberOfDiscs());
@@ -247,7 +247,7 @@ public class GameEntityManager implements EntityManager {
 		// Update the item component of this accessory
 		itemEntityManager.updateItem(game);
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateStatement = dbConnection.prepareStatement(updateGameQuery)) {
 			updateStatement.setInt(5, game.getItemNumber());
 			updateStatement.setInt(1, game.getNumberOfDiscs());
@@ -267,7 +267,7 @@ public class GameEntityManager implements EntityManager {
 	public void deleteGame(Game game) throws SQLException {
 		final String deleteGameQuery = "DELETE FROM game WHERE gameId = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteStatement = dbConnection.prepareStatement(deleteGameQuery)) {
 			deleteStatement.setInt(1, game.getItemNumber());			
 			deleteStatement.executeUpdate();
@@ -286,8 +286,16 @@ public class GameEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", GameEntityManager.TABLE_NAME));
+		exportSQLResults.add(GameEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(GameEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 }

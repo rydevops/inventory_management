@@ -32,6 +32,14 @@ import com.ryorke.entity.exception.InvalidUserAttributeException;
  * @author Russell Yorke
  */
 public class UserEntityManager implements EntityManager {
+	private final static String CREATE_TABLE_QUERY = "CREATE TABLE IF NOT EXISTS user "
+			+ "(userId INTEGER PRIMARY KEY, "
+			+ "username TEXT NOT NULL UNIQUE COLLATE NOCASE, " // CASE INSENSITIVE
+			+ "password TEXT NOT NULL, "
+			+ "firstName TEXT NOT NULL, lastName TEXT NOT NULL, "
+			+ "administrator INTEGER DEFAULT 0)";
+	private final static String TABLE_NAME = "user";
+	
 	private static UserEntityManager entityManager = null; 
 	private SQLiteDBManager databaseManager = null;
 	/** 
@@ -60,7 +68,7 @@ public class UserEntityManager implements EntityManager {
 		ArrayList<User> userList = null;
 		final String query = "SELECT * FROM user";
 		
-		try (Connection connection = databaseManager.getConnection();
+		try (Connection connection = databaseManager.getConnection(true);
 				Statement statement = connection.createStatement();
 				ResultSet results = statement.executeQuery(query)) {
 			while (results.next()) {
@@ -103,20 +111,14 @@ public class UserEntityManager implements EntityManager {
 	 * @throws SQLException If a database error occurs while processing the request. 
 	 */
 	@Override
-	public void createTable() throws SQLException {
-		final String createTableQuery = "CREATE TABLE IF NOT EXISTS user "
-				+ "(userId INTEGER PRIMARY KEY, "
-				+ "username TEXT NOT NULL UNIQUE COLLATE NOCASE, " // CASE INSENSITIVE
-				+ "password TEXT NOT NULL, "
-				+ "firstName TEXT NOT NULL, lastName TEXT NOT NULL, "
-				+ "administrator INTEGER DEFAULT 0)";
+	public void createTable() throws SQLException {		
 		final String insertDefaultUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) "
 				+ "VALUES ('admin', 'admin', 'Administrative', 'User', 1)";
 		
-		if (!databaseManager.tableExists("user")) {
-			try (Connection dbConnection = databaseManager.getConnection();
+		if (!databaseManager.tableExists(UserEntityManager.TABLE_NAME)) {
+			try (Connection dbConnection = databaseManager.getConnection(true);
 					Statement sqlStatement = dbConnection.createStatement();) {
-				sqlStatement.executeUpdate(createTableQuery);
+				sqlStatement.executeUpdate(UserEntityManager.CREATE_TABLE_QUERY);
 
 				int result = sqlStatement.executeUpdate(insertDefaultUserQuery);
 				
@@ -136,8 +138,16 @@ public class UserEntityManager implements EntityManager {
 	 */
 	@Override
 	public ArrayList<String> exportTable() throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> exportSQLResults = new ArrayList<String>();		
+		
+		exportSQLResults.add(String.format("DROP TABLE IF EXISTS %s", UserEntityManager.TABLE_NAME));
+		exportSQLResults.add(UserEntityManager.CREATE_TABLE_QUERY);
+		
+		ArrayList<String> dataRecords = databaseManager.exportRecords(UserEntityManager.TABLE_NAME);		
+		if (dataRecords != null)
+			exportSQLResults.addAll(dataRecords);
+		
+		return exportSQLResults;
 	}
 
 	/**
@@ -154,7 +164,7 @@ public class UserEntityManager implements EntityManager {
 		User authenticatedUser = null;
 		String userQuery = "SELECT * FROM user WHERE username = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement sqlStatement = dbConnection.prepareStatement(userQuery)){
 			sqlStatement.setString(1, username);
 			ResultSet results = sqlStatement.executeQuery();
@@ -187,7 +197,7 @@ public class UserEntityManager implements EntityManager {
 		String insertUserQuery = "INSERT INTO user (username, password, firstName, lastName, administrator) VALUES (?, ?, ?, ?, ?)";
 		String userIdQuery = "SELECT last_insert_rowid() AS userId";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement insertUserStatement = dbConnection.prepareStatement(insertUserQuery);
 				Statement lastRowInsertStatement = dbConnection.createStatement()) {
 			insertUserStatement.setString(1, user.getUsername());
@@ -213,7 +223,7 @@ public class UserEntityManager implements EntityManager {
 	public void updateUser(User user) throws SQLException {
 		String updateUserQuery = "UPDATE user SET username = ?, password = ?, firstName = ?, lastName = ?, administrator = ? WHERE userId = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement updateUserStatement = dbConnection.prepareStatement(updateUserQuery)) {
 			updateUserStatement.setString(1, user.getUsername());
 			updateUserStatement.setString(2, user.getPassword());
@@ -236,7 +246,7 @@ public class UserEntityManager implements EntityManager {
 	public void deleteUser(User user) throws SQLException {
 		String deleteUserQuery = "DELETE FROM user WHERE userId = ?";
 		
-		try (Connection dbConnection = databaseManager.getConnection();
+		try (Connection dbConnection = databaseManager.getConnection(true);
 				PreparedStatement deleteUserStatement = dbConnection.prepareStatement(deleteUserQuery)) {
 			deleteUserStatement.setInt(1, user.getUserId());
 			

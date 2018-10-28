@@ -68,6 +68,7 @@ public class GameSelectionDialog extends JDialog {
  	
 		tableModel = new GameTableModel(consoleId, existingGameIdsIncluded);
 		JTable gameList = new JTable(tableModel);
+		gameList.setAutoCreateRowSorter(true);
 		gameList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		gameList.setCellSelectionEnabled(false);
 		gameList.setRowSelectionAllowed(false);

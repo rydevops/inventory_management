@@ -26,10 +26,14 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.regex.PatternSyntaxException;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -41,6 +45,8 @@ import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableRowSorter;
+import javax.swing.RowFilter;
 
 import com.ryorke.database.AccessoryEntityManager;
 import com.ryorke.database.ConsoleEntityManager;
@@ -74,6 +80,7 @@ public class InventoryManagementFrame extends JFrame {
 
 	private JTextField filterInventoryQuery;
 	private JButton filter;
+	private JButton filterClear;
 	private JButton addInventoryItem;
 	private JButton editInventoryItem;
 	private JButton deleteInventoryItem;
@@ -102,12 +109,14 @@ public class InventoryManagementFrame extends JFrame {
 		
 		JMenuBar mainMenu = createMainMenu(); 
 		setJMenuBar(mainMenu);		
-		
-	    JPanel filterControls = createFilterControls();
-	    contentPane.add(filterControls, BorderLayout.NORTH);
-	    
+			    
 	    JScrollPane inventoryView = createInventoryTable();
 	    contentPane.add(inventoryView, BorderLayout.CENTER);
+	    
+	    // Requires this ordering as this creates an event listener
+	    // based on data from the inventoryView
+	    JPanel filterControls = createFilterControls();
+	    contentPane.add(filterControls, BorderLayout.NORTH);
 	    
 	    JPanel inventoryButtons = createInventoryButtons();
 	    contentPane.add(inventoryButtons, BorderLayout.SOUTH);
@@ -224,7 +233,9 @@ public class InventoryManagementFrame extends JFrame {
 	 * Shows the edit item dialog based on the selected item. 
 	 */
 	private void showEditItemDialog() {
-		int selectedRow = inventoryTable.getSelectedRow();	
+		// Get the model data row (convert the view row to the model)
+		int selectedRow = inventoryTable.getSelectedRow();		
+		selectedRow = inventoryTable.convertRowIndexToModel(selectedRow);
 		if (selectedRow > -1) {
 			ItemEditorDialog editor = new ItemEditorDialog(InventoryManagementFrame.this, inventoryTableModel.getRow(selectedRow));
 			editor.setVisible(true);
@@ -282,8 +293,9 @@ public class InventoryManagementFrame extends JFrame {
 			System.exit(1);
 		}
 		
-		inventoryTable = new JTable(inventoryTableModel);
-		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);	
+		inventoryTable = new JTable(inventoryTableModel);		
+		inventoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		inventoryTable.setRowSorter(inventoryTableModel.getTableSorter());
 		inventoryTable.addMouseListener(new MouseListener() {
 
 			/**
@@ -325,6 +337,7 @@ public class InventoryManagementFrame extends JFrame {
 			public void mouseEntered(MouseEvent e) {}
 			
 		});
+		
 		
 		JScrollPane tableScroller = new JScrollPane(inventoryTable);
 		
@@ -388,7 +401,7 @@ public class InventoryManagementFrame extends JFrame {
 			 */
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new InventoryDBManagementFrame();
+				new InventoryDBManagementFrame(InventoryManagementFrame.this).setVisible(true);
 			}
 			
 		});
@@ -442,7 +455,7 @@ public class InventoryManagementFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(InventoryManagementFrame.this, 
-						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.3", 
+						"Inventory Management Database\nAuthor: Russell Yorke\nVersion: 0.5", 
 						"About", JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
@@ -467,7 +480,26 @@ public class InventoryManagementFrame extends JFrame {
 		
 		JLabel filterLabel = new JLabel("Filter Query:");
 		filterInventoryQuery = new JTextField();
+		filterInventoryQuery.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				applyFilter();				
+			}
+		});
 		filter = new JButton("Filter");
+		filter.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				applyFilter();
+			}
+		});
+		filterClear = new JButton("Clear Filter");
+		filterClear.addActionListener(new ActionListener() {			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				inventoryTableModel.getTableSorter().setRowFilter(null);				
+			}
+		});
 		
 		filterLabel.setLabelFor(filterInventoryQuery);
 		filterLabel.setDisplayedMnemonic(KeyEvent.VK_I);
@@ -475,11 +507,38 @@ public class InventoryManagementFrame extends JFrame {
 		
 		filterPanel.add(filterLabel, BorderLayout.WEST);
 		filterPanel.add(filterInventoryQuery, BorderLayout.CENTER);
-		filterPanel.add(filter, BorderLayout.EAST);
+		JPanel buttonContainer = new JPanel(new GridLayout(1, 2));
+		buttonContainer.add(filter);
+		buttonContainer.add(filterClear);
+		filterPanel.add(buttonContainer, BorderLayout.EAST);
 		
 		return filterPanel;		
 	}
 	
+	/**
+	 * Filters the table by applying applying the regex against
+	 * the item name and/or description columns. 
+	 */
+	private void applyFilter() {
+		String filterExpression = filterInventoryQuery.getText();
+		
+		if (filterExpression.length() > 0) {
+			TableRowSorter<InventoryTableModel> sorter = inventoryTableModel.getTableSorter();
+			 
+			
+			try {
+				RowFilter<InventoryTableModel, Integer> appliedFilter = RowFilter.regexFilter(filterExpression, 
+					InventoryTableModel.ITEM_DESCRIPTION, InventoryTableModel.ITEM_NAME);
+				sorter.setRowFilter(appliedFilter);
+			} catch (PatternSyntaxException syntaxError) {
+				JOptionPane.showMessageDialog(InventoryManagementFrame.this, "Invalid filter provided", "Filter error", 
+						JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+			}
+		} else {
+			JOptionPane.showMessageDialog(InventoryManagementFrame.this, "No filter provide.", "Invalid filter",
+					JOptionPane.OK_OPTION|JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
 	/**
 	 * Creates a set of buttons for modifying a selected
 	 * inventory item
@@ -547,20 +606,22 @@ public class InventoryManagementFrame extends JFrame {
 	 */
 	public void deleteSelectedItem() {
 		int selectedItemIndex = inventoryTable.getSelectedRow();
+		selectedItemIndex = inventoryTable.convertRowIndexToModel(selectedItemIndex);
 		String message;
 		String title;
 		int options;
+		Item selectedItem; 
 		
 		if (selectedItemIndex >= 0) {
-			message = "About to delete selected item. Are you sure?";
+			selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+			message = String.format("About to delete \"%s\" item. Are you sure?", selectedItem.getProductName());
 			title = "Delete item?";
 			options = JOptionPane.YES_NO_OPTION;
 			
 			int response = JOptionPane.showConfirmDialog(this, message, title, options);
 			
 			if (response == JOptionPane.YES_OPTION) {
-				try {
-					Item selectedItem = inventoryTableModel.getRow(selectedItemIndex);
+				try {					
 					boolean performDelete = true;
 					
 					if (selectedItem instanceof Game && gameIncludedWithConsole((Game)selectedItem)) {
@@ -626,6 +687,7 @@ public class InventoryManagementFrame extends JFrame {
 	 */
 	private void logout() {
 		new AuthenticationFrame();
+		
 		closeWindow(false);
 	}
 	
@@ -668,6 +730,8 @@ public class InventoryManagementFrame extends JFrame {
 		private AccessoryEntityManager accessoryManager;
 		private GameEntityManager gameManager;
 		
+		private TableRowSorter<InventoryTableModel> tableSorter;
+		
 		/**
 		 * Populates the table inventory from the database
 		 * 
@@ -691,6 +755,57 @@ public class InventoryManagementFrame extends JFrame {
 			ArrayList<Game> games = gameManager.getGames();
 			if (games != null)
 				inventoriedItems.addAll(games);
+			
+			// Attach table sorter
+			setupTableSorter();
+		}
+		
+		/**
+		 * Creates a default TableRowSorter and then overrides
+		 * a select handful of columns that do not have comparator
+		 * implementations available. This will provide the custom
+		 * comparator actions to ensure sort order is valid.
+		 * 
+		 * NOTE: Due to the formatters displaying text custom implementations
+		 * are required to convert the data back into its raw format. 
+		 */
+		private void setupTableSorter() {
+			tableSorter = new TableRowSorter<>(this);
+			
+			// Converts units in to a number for sorting
+			tableSorter.setComparator(ITEM_UNITS_IN_STOCK, new Comparator<String>() {
+				@Override
+				public int compare(String unitsInStockString1, String unitsInStockString2) {
+					String removeCharacters = "[$,]";
+					Integer unitsInStock1 = new Integer(unitsInStockString1.replaceAll(removeCharacters, ""));
+					Integer unitsInStock2 = new Integer(unitsInStockString2.replaceAll(removeCharacters, ""));
+
+					return unitsInStock1.compareTo(unitsInStock2);
+				}				
+			});
+			
+			
+			// Sorts unit costs. 
+			tableSorter.setComparator(ITEM_UNIT_COST, new Comparator<String>() {
+				@Override
+				public int compare(String unitsCostString1, String unitsCostString2) {
+					String removeCharacters = "[$,]";
+					Double unitsCost1 = new Double(unitsCostString1.replaceAll(removeCharacters, ""));
+					Double unitsCost2 = new Double(unitsCostString2.replaceAll(removeCharacters, ""));
+
+					return unitsCost1.compareTo(unitsCost2);
+				}				
+			});
+			
+		}
+		
+		/**
+		 * Returns the table sorter being used on this model
+		 * 
+		 * @return A table sorter
+		 */
+		public TableRowSorter<InventoryTableModel> getTableSorter() {
+			return tableSorter;
 		}
 		
 		/**
@@ -795,10 +910,13 @@ public class InventoryManagementFrame extends JFrame {
 					
 					break;
 				case ITEM_UNITS_IN_STOCK:
-					value = item.getUnitsInStock();
+					DecimalFormat decimalFormatter = new DecimalFormat("#,##0");
+					decimalFormatter.setMaximumFractionDigits(0);
+					value = decimalFormatter.format(item.getUnitsInStock());
 					break;
 				case ITEM_UNIT_COST:
-					value = item.getUnitCost();
+					NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance();
+					value = currencyFormatter.format(item.getUnitCost());
 					break;
 				case ITEM_MANUFACTURE:
 					value = item.getManufacture();
@@ -822,6 +940,23 @@ public class InventoryManagementFrame extends JFrame {
 		@Override
 		public String getColumnName(int columnIndex) {			
 			return header[columnIndex];
+		}
+		
+		/**
+		 * Returns the class type for each column to enable sorting
+		 * of columns within the table. 
+		 * 
+		 * @param columnIndex The column index being sorted
+		 * @return A class type to be used in sorting
+		 */
+		@Override
+		public Class<?> getColumnClass(int columnIndex) {
+			Class<?> result = Object.class; 
+			if (!inventoriedItems.isEmpty()) {			
+				result = getValueAt(0, columnIndex).getClass();
+			}
+			
+			return result;
 		}
 		
 	}

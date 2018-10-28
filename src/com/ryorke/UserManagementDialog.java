@@ -259,6 +259,7 @@ public class UserManagementDialog extends JDialog {
 	 */
 	private void createUserTable(Container contentPane) {
 		userTable = new JTable(userTableModel);
+		userTable.setAutoCreateRowSorter(true);  // Default sorter works for our use case
 		userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		JScrollPane userTableScrollView = new JScrollPane(userTable);		
 		contentPane.add(userTableScrollView, BorderLayout.CENTER);
@@ -500,7 +501,7 @@ public class UserManagementDialog extends JDialog {
 				user = new User(username, password, firstName, lastName, isAdministrator);
 				userTableModel.addUser(user);
 			} else {
-				int selectedRow = userTable.getSelectedRow();				
+				int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow());				
 				User modifiedUser = userTableModel.getUser(selectedRow).clone();
 				modifiedUser.setUsername(this.username.getText());
 				modifiedUser.setFirstName(this.firstName.getText());
@@ -512,7 +513,7 @@ public class UserManagementDialog extends JDialog {
 				userTableModel.updateUser(modifiedUser);
 			}			
 		} catch (InvalidUserAttributeException exception) {
-			JOptionPane.showMessageDialog(this, "Unable to save user to database due to a corrupted user table. Check with your System administrator if problem persists."
+			JOptionPane.showMessageDialog(this, "Unable to save user. Check with your System administrator if problem persists."
 					+ "\n\nReason:\n" + exception.getMessage(), errorTitle, errorDisplayOptions);
 			this.username.requestFocus();
 			return;
@@ -538,7 +539,7 @@ public class UserManagementDialog extends JDialog {
 	 * the fill data in these fields are ignored. 
 	 */
 	private void editUser() {
-		int selectedRow = userTable.getSelectedRow(); 
+		int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow()); 
 		if (selectedRow > -1) {
 			User selectedUser = userTableModel.getUser(selectedRow);		
 			
@@ -582,11 +583,11 @@ public class UserManagementDialog extends JDialog {
 	 * Deletes the selected user after confirming this operation
 	 */
 	private void deleteUser() {
-		int selectedRow = userTable.getSelectedRow();
+		int selectedRow = userTable.convertRowIndexToModel(userTable.getSelectedRow());
 		String message = "";		
 		
 		if (selectedRow > -1) {
-			message = "Are you sure you want to delete the selected user?";			
+			message = String.format("Are you sure you want to delete \"%s\"?", userTableModel.getUser(selectedRow).getUsername());			
 			
 			int response = JOptionPane.showConfirmDialog(this, message, "Delete user?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (response == JOptionPane.YES_OPTION) {
@@ -782,6 +783,23 @@ public class UserManagementDialog extends JDialog {
 				// It should not be possible to reach this statement. If this occurs, 
 				// it means a new column has been added that hasn't been accounted for. 
 				assert (columnIndex < FIELD_USERNAME || columnIndex > FIELD_ADMINISTRATOR): "Invalid column index requested in UserTableModel";	
+			}
+			
+			return result;
+		}
+		
+		/**
+		 * Returns the class type for each column to enable sorting
+		 * of columns within the table. 
+		 * 
+		 * @param columnIndex The column index being sorted
+		 * @return A class type to be used in sorting
+		 */
+		@Override
+		public Class<?> getColumnClass(int columnIndex) {
+			Class<?> result = Object.class; 
+			if (!users.isEmpty()) {			
+				result = getValueAt(0, columnIndex).getClass();
 			}
 			
 			return result;
