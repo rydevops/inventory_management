@@ -341,40 +341,44 @@ public class InventoryDBManagementFrame extends JDialog {
 		setEnableControls(false);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		
-		// Gather SQL instruction set
-		ArrayList<String> exportStatements = null;
-		try {
-			exportStatements = SQLiteDBManager.getManager().exportDatabase();
-			updateProgressBar(50, true);
-		} catch (SQLException | IOException exception) { 
-			JOptionPane.showMessageDialog(null, 
-				String.format("An error occurred while generating backup (Reason: %s)", exception.getMessage()), 
-				"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-		} 
-		
-		// Write data to file
-		if (exportStatements != null) {
-			try (FileWriter fileWriter = new FileWriter(exportFile);
-				 BufferedWriter backupWriter = new BufferedWriter(fileWriter)){
-				for (int lineNumber = 0; lineNumber < exportStatements.size(); lineNumber++) {					
-					backupWriter.write(exportStatements.get(lineNumber) + "\n");
-					
-					// Calculate percentage of data written assuming 50% completed during
-					// database sql statement generation
-					double writtenPercentage = (((((float)lineNumber + 1) / ((float)exportStatements.size())) * 0.5) + 0.5) * 100.0;
-					updateProgressBar((int) writtenPercentage, true);
-				}
-			} catch (IOException exception) {
-				JOptionPane.showMessageDialog(null, 
-					String.format("An error occured while writing backup data to %s (Reason: %s)", 
-							exportFile.getAbsolutePath(), exception.getMessage()), 
-					"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
-			}
-		}
-		
-		// Restore window functionality
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setEnableControls(true);		
+		ExportRunner exporter = new ExportRunner(exportFile, progressBar, this);
+		Thread exportRunner = new Thread(exporter);
+		exportRunner.start();
+		// TODO: REMOVE
+//		// Gather SQL instruction set
+//		ArrayList<String> exportStatements = null;
+//		try {
+//			exportStatements = SQLiteDBManager.getManager().exportDatabase();
+//			updateProgressBar(50, true);
+//		} catch (SQLException | IOException exception) { 
+//			JOptionPane.showMessageDialog(null, 
+//				String.format("An error occurred while generating backup (Reason: %s)", exception.getMessage()), 
+//				"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+//		} 
+//		
+//		// Write data to file
+//		if (exportStatements != null) {
+//			try (FileWriter fileWriter = new FileWriter(exportFile);
+//				 BufferedWriter backupWriter = new BufferedWriter(fileWriter)){
+//				for (int lineNumber = 0; lineNumber < exportStatements.size(); lineNumber++) {					
+//					backupWriter.write(exportStatements.get(lineNumber) + "\n");
+//					
+//					// Calculate percentage of data written assuming 50% completed during
+//					// database sql statement generation
+//					double writtenPercentage = (((((float)lineNumber + 1) / ((float)exportStatements.size())) * 0.5) + 0.5) * 100.0;
+//					updateProgressBar((int) writtenPercentage, true);
+//				}
+//			} catch (IOException exception) {
+//				JOptionPane.showMessageDialog(null, 
+//					String.format("An error occured while writing backup data to %s (Reason: %s)", 
+//							exportFile.getAbsolutePath(), exception.getMessage()), 
+//					"Export failed", JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE);
+//			}
+//		}
+//		
+//		// Restore window functionality
+//		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+//		setEnableControls(true);		
 	}
 	
 	
@@ -449,6 +453,44 @@ public class InventoryDBManagementFrame extends JDialog {
 		
 		JOptionPane.showMessageDialog(this, message, title, dialogOptions);
 		System.exit(0);
+	}
+	
+	/**
+	 * Callback function executed once an export operation 
+	 * has completed. Called from the ExportRunner
+	 * 
+	 * @param importer An ImportRunner used to validate the completion status
+	 */
+	public void exportCompleted(ExportRunner importer) {
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setEnableControls(true);
+		
+		String message = ""; 
+		String title = "";
+		int dialogOptions = 0;
+		
+		if (importer.databaseErrorOccured()) {
+			message = "A failue occured while exporting from the database. Contact System "
+					+ "Administrators if problems persist.\n\nReason: %s";
+			message = String.format(message, importer.getException().getMessage());
+			title = "Database export failed";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+		} else if (importer.exportFileReadErrorOccured()) {
+			message = "Unable to write to export file. Contact System "
+					+ "Administrators if problems persist. \n\nReason: %s";
+			message = String.format(message, importer.getException().getMessage());
+			title = "Export file unwriteable";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.ERROR_MESSAGE;
+			
+		} else {
+			message = "Export process completed successfully.";
+			title = "Export completed successfully";
+			dialogOptions = JOptionPane.OK_OPTION | JOptionPane.INFORMATION_MESSAGE;
+			
+		}
+		
+		JOptionPane.showMessageDialog(this, message, title, dialogOptions);
 	}
 	
 	/**
@@ -558,6 +600,9 @@ public class InventoryDBManagementFrame extends JDialog {
 		 * 
 		 * @param dropTables If true the database tables will be dropped first
 		 * @param importFile A File to import into the database
+		 * @param progressBar A progress bar to update with the status of this operation
+		 * @param owner An owner to call once this operation is completed. This will call the 
+		 *              importCompleted method on this owner. 
 		 */
 		public ImportRunner(boolean dropTables, File importFile, JProgressBar progressBar, 
 				InventoryDBManagementFrame owner) {
@@ -713,10 +758,7 @@ public class InventoryDBManagementFrame extends JDialog {
 		}
 		
 		/**
-		 * Updates a progress bar including the text to display on it. 
-		 * 
-		 * @param currentValue A value between 0 and 100 to adjust the progress bar
-		 * @param exporting If true "% Exported" will be displayed, otherwise "% Imported" will be displayed. 
+		 * Updates a progress bar including the text to display on it.  
 		 */
 		private void updateProgressBar() {
 			int completed = (int) (((float)currentOperation) / ((float)totalOperations) * 100.0F);
@@ -727,4 +769,135 @@ public class InventoryDBManagementFrame extends JDialog {
 			progressBar.setStringPainted(true);
 		}
 	}
+	
+	/**
+	 * Performs export operations in a separate thread
+	 * to allow the UI to continue processing events. 
+	 * 
+	 * @author Russell Yorke
+	 *
+	 */
+	@SuppressWarnings("unused")
+	private class ExportRunner implements Runnable {
+		private Integer totalOperations = 0;
+		private Integer currentOperation = 0;  
+		private File exportFile;		
+		private JProgressBar progressBar; 		 
+		private boolean databaseErrorOccured = false; 
+		private boolean exportFileReadErrorOccured = false; 
+		private Exception exceptionCaught = null; 
+		private InventoryDBManagementFrame owner = null;
+		
+		/**
+		 * Configures a new database export runner
+		 * 
+		 * @param exportFile A File to export SQL statements to
+		 * @param progressBar A progress bar to update with the status
+		 * @param owner An owner with the exportCompleted function
+		 */
+		public ExportRunner(File exportFile, JProgressBar progressBar, InventoryDBManagementFrame owner) {			
+			this.exportFile = exportFile;
+			this.progressBar = progressBar;
+			this.owner = owner;
+		}
+		
+		/**
+		 * Provides access to an exception if one occurred
+		 * 
+		 * @return An exception that occurred during execution
+		 */
+		public Exception getException() {
+			return exceptionCaught;
+		}
+		
+		/**
+		 * Provides the status of the database operations. 
+		 * When this is true an exception will be set. 
+		 * 
+		 * @return True if a database error occurred during export, false otherwise. 
+		 */
+		public boolean databaseErrorOccured() {
+			return databaseErrorOccured;
+		}
+		
+		/**
+		 * Provides the status of the file writing operations for the export file. 
+		 * When this is true an exception will be set. 
+		 * 
+		 * @return True if a file write operation failed, false otherwise. 
+		 */
+		public boolean exportFileReadErrorOccured() {
+			return exportFileReadErrorOccured;
+		}
+		
+		/**
+		 * The total number of operations required to complete
+		 * this execution. 
+		 * @return The total number of operations to complete execution
+		 */
+		public Integer getTotalOperations() {
+			return totalOperations;
+		}
+		
+		/**
+		 * Returns the current operation number completed
+		 * so far. 
+		 * 
+		 * @return An Integer representing the current operation completed. 
+		 */
+		public Integer getCurrentOperation() {
+			return currentOperation;
+		}
+		
+		/**
+		 * Performs a database export when called. 
+		 * This will updated progress bar through this process 
+		 */
+		@Override
+		public void run() {
+			// Generate SQL import statements for backup
+			ArrayList<String> exportStatements = null;
+			try {
+				exportStatements = SQLiteDBManager.getManager().exportDatabase();
+				totalOperations = exportStatements.size() * 2;
+				currentOperation = exportStatements.size();
+				updateProgressBar();
+			} catch (SQLException | IOException exception) { 
+				databaseErrorOccured = true; 
+				exceptionCaught = exception;
+			} 
+			
+			// Write data to file
+			if (exportStatements != null) {
+				try (FileWriter fileWriter = new FileWriter(exportFile);
+					 BufferedWriter backupWriter = new BufferedWriter(fileWriter)){
+					for (String sqlStatement : exportStatements) {							
+						backupWriter.write(sqlStatement + "\n");
+						currentOperation++;
+						updateProgressBar();						
+					}
+				} catch (IOException exception) {
+					exportFileReadErrorOccured = true; 
+					exceptionCaught = exception;					
+				}
+			}
+			
+			owner.exportCompleted(this);
+		}
+					
+		/**
+		 * Updates a progress bar including the text to display on it. 
+		 */
+		private void updateProgressBar() {
+			int completed = (int) (((float)currentOperation) / ((float)totalOperations) * 100.0F);
+			String progressStatusMessage = String.format("%d of %d (%d%%) export operations completed", currentOperation, totalOperations, completed);
+			progressBar.setValue(completed);
+			progressBar.setString(progressStatusMessage);
+			progressBar.setVisible(true);
+			progressBar.setStringPainted(true);
+		}
+	}
 }
+
+
+
